@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "compose": "^0.1.2",
+    "docker": "^0.2.14",
+    "typescript": "^5.4.5",
+    "up": "^1.0.2"
+  }
+}
