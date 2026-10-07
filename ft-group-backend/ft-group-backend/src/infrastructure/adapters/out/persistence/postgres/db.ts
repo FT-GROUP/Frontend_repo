@@ -11,6 +11,13 @@ import { env } from '../../../../config/env';
  */
 types.setTypeParser(20, (valor: string) => parseInt(valor, 10));
 
+// NUMERIC (OID 1700): montos en pesos. Se convierten a number.
+types.setTypeParser(1700, (valor: string) => parseFloat(valor));
+
+// DATE (OID 1082): se deja como texto 'YYYY-MM-DD' para evitar
+// corrimientos de zona horaria al convertirlo a Date.
+types.setTypeParser(1082, (valor: string) => valor);
+
 
 /**
  * Pool de conexiones a PostgreSQL. Este es el UNICO lugar del proyecto

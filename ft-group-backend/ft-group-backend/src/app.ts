@@ -3,9 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import authRoutes from './infrastructure/adapters/in/http/routes/authRoutes';
-import grupoRoutes from './infrastructure/adapters/in/http/routes/grupoRoutes';
-import reporteRoutes from './infrastructure/adapters/in/http/routes/reporteRoutes';
-import notificacionRoutes from './infrastructure/adapters/in/http/routes/notificacionRoutes';
+import finanzasRoutes from './infrastructure/adapters/in/http/routes/finanzasRoutes';
 import { errorHandler, rutaNoEncontrada } from './infrastructure/adapters/in/http/middlewares/errorHandler';
 import { env } from './infrastructure/config/env';
 
@@ -31,14 +29,14 @@ export function crearApp(): Application {
 
   // --- Chequeo de salud ---
   app.get('/health', (_req, res) => {
-    res.status(200).json({ estado: 'ok', servicio: 'ft-group-backend', modulo: 'usuarios' });
+    res.status(200).json({ estado: 'ok', servicio: 'ft-group-backend', modulos: ['usuarios', 'grupos', 'gastos', 'balances', 'historial'] });
   });
 
   // --- Rutas del modulo de usuarios / autenticacion ---
   app.use('/api/auth', authRoutes);
-  app.use('/api/grupos', grupoRoutes);
-  app.use('/api/reportes', reporteRoutes);
-  app.use('/api/notificaciones', notificacionRoutes);
+
+  // --- Rutas de grupos, gastos, balances, historial y panel ---
+  app.use('/api', finanzasRoutes);
 
   // --- 404 y manejo centralizado de errores ---
   app.use(rutaNoEncontrada);

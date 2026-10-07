@@ -1,12 +1,13 @@
-# FT. GROUP — Backend y servicios financieros
+# FT. GROUP — Backend
 
-Backend del **Sistema Web de Gestión y División de Gastos Compartidos**
-(FT. GROUP, Grupo 2, Universidad de San Buenaventura), con autenticación,
-gestión de grupos, gastos compartidos, balances, historial, notificaciones y
-reportes sobre la **Arquitectura Hexagonal (Ports & Adapters)** definida en el
-documento oficial de arquitectura. Los servicios comparten la API Express y la
-base de datos PostgreSQL, de acuerdo con esa arquitectura; no son despliegues
-independientes.
+> **Módulos implementados:** usuarios/autenticación, gestión de grupos, registro de gastos,
+> motor de cálculo (divisiones y balances), historial financiero, panel de usuario y
+> registro de recibos escaneados. Ver la sección **"Módulos financieros"** al final.
+
+Backend funcional del **Sistema Web de Gestión y División de Gastos Compartidos**
+(FT. GROUP, Grupo 2, Universidad de San Buenaventura), implementando el
+**módulo de usuarios / autenticación** sobre la **Arquitectura Hexagonal
+(Ports & Adapters)** definida en el documento oficial de arquitectura.
 
 **Stack:** Node.js + Express + TypeScript + PostgreSQL + JWT + Bcrypt.
 
@@ -18,16 +19,13 @@ independientes.
 src/
 ├── domain/                 # NÚCLEO: no depende de Express, ni de pg, ni de JWT
 │   ├── entities/            → Usuario (reglas de negocio puras)
-│   ├── services/            → Reglas de dominio para división de gastos
 │   ├── errors/               → Errores de negocio (EmailYaRegistradoError, etc.)
 │   └── ports/
 │       ├── in/               → Contratos de los casos de uso (lo que el exterior puede pedir)
 │       └── out/               → Contratos que el núcleo exige a la infraestructura
 │                                (UsuarioRepository, PasswordHasher, TokenService...)
 │
-├── application/            # Casos de uso y servicios de aplicación
-│   ├── services/            → Grupos, gastos, pagos e indicadores
-│   └── usecases/            → Casos de uso de usuario y autenticación
+├── application/usecases/   # Capa de aplicación: coordina el dominio y los puertos de salida
 │   ├── RegistrarUsuarioUseCaseImpl.ts
 │   ├── IniciarSesionUseCaseImpl.ts
 │   ├── RefrescarTokenUseCaseImpl.ts
@@ -41,7 +39,7 @@ src/
 │   │   ├── middlewares/       → Validación (Zod), autenticación (JWT), manejo de errores
 │   │   └── validators/        → Esquemas de validación de entrada
 │   ├── adapters/out/
-│   │   ├── persistence/postgres/ → Repositorios PostgreSQL de usuarios y finanzas
+│   │   ├── persistence/postgres/ → PostgresUsuarioRepository, PostgresRefreshTokenRepository
 │   │   └── security/              → BcryptPasswordHasher, JwtTokenService
 │   └── config/
 │       ├── env.ts             → Único lugar que lee variables de entorno
@@ -51,8 +49,8 @@ src/
 ├── app.ts                   # Configuración de Express (middlewares, rutas)
 └── server.ts                # Punto de entrada: conecta a la BD y levanta el servidor
 
-db/migrations/               # SQL de usuarios, grupos, gastos y actividad
-tests/unit/                  # Pruebas de dominio y aplicación
+db/migrations/               # SQL de las tablas usuario y refresh_token
+tests/unit/                  # Pruebas de los casos de uso con MOCKS de los puertos
 ```
 
 **Regla de oro de esta arquitectura:** el código dentro de `domain/` y
@@ -86,7 +84,7 @@ docker compose up -d
 #    Opción B: usar un PostgreSQL que ya tengas instalado localmente,
 #    ajustando DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME en .env
 
-# 4) Ejecutar las migraciones (usuarios y módulos financieros)
+# 4) Ejecutar las migraciones (crea las tablas usuario y refresh_token)
 npm run migrate:dev
 
 # 5) Levantar el servidor en modo desarrollo (recarga automática)
@@ -122,42 +120,6 @@ Todos los cuerpos de petición/respuesta son JSON.
 | POST   | `/api/auth/logout`    | Revoca un refresh token                         | No             |
 | GET    | `/api/auth/me`        | Devuelve el perfil del usuario autenticado      | Sí (Bearer)    |
 | GET    | `/health`             | Chequeo de salud del servicio                   | No             |
-
-### Servicios financieros y analíticos
-
-Todas estas rutas requieren `Authorization: Bearer <accessToken>`.
-
-| Método | Ruta | Función |
-|--------|------|---------|
-| GET / POST | `/api/grupos` | Listar los grupos propios / crear un grupo (el creador queda como administrador). |
-| GET | `/api/grupos/:grupoId/integrantes` | Consultar integrantes activos del grupo. |
-| POST | `/api/grupos/:grupoId/integrantes` | Agregar un integrante (JSON `{ "usuarioId": 2 }`). Solo administradores gestionan integrantes. |
-| DELETE | `/api/grupos/:grupoId/integrantes/:usuarioId` | Retirar un integrante; el grupo conserva un administrador activo. |
-| GET / POST | `/api/grupos/:grupoId/gastos` | Consultar o registrar gastos con división equitativa o personalizada. |
-| POST | `/api/grupos/gastos/:gastoId/pagos` | Confirmar el pago pendiente del usuario autenticado. |
-| GET | `/api/grupos/:grupoId/balances` | Consultar balances netos del integrante autenticado. |
-| GET | `/api/grupos/:grupoId/historial` | Consultar movimientos recientes del grupo. |
-| GET | `/api/reportes/resumen` | KPIs personales y proyección mensual mediante promedio móvil de los tres meses completos previos. |
-| GET | `/api/notificaciones` | Listar las notificaciones del usuario autenticado. |
-| PATCH | `/api/notificaciones/:notificacionId/leida` | Marcar una notificación propia como leída. |
-
-Ejemplo de gasto equitativo:
-
-```json
-{
-  "descripcion": "Compra compartida",
-  "montoTotal": 30,
-  "fechaGasto": "2026-10-06",
-  "categoria": "Comida",
-  "tipoDivision": "equitativa",
-  "usuarioIds": [1, 2, 3]
-}
-```
-
-El servicio reparte los importes en centavos para conservar exactamente el
-monto total. El alta del gasto, sus participaciones, movimientos, notificaciones
-y el recálculo de balances se ejecutan dentro de una transacción. Las migraciones
-`003_modulos_financieros.sql` crean las tablas e índices de estos módulos.
 
 ### Ejemplos con `curl`
 
@@ -253,3 +215,59 @@ seguir es siempre el mismo:
 
 Esto mantiene la promesa central de la arquitectura elegida: el
 dominio y los casos de uso nunca cambian por cambios de infraestructura.
+
+
+---
+
+## Módulos financieros (grupos, gastos, balances, historial)
+
+### Tablas nuevas (migraciones 003–005)
+
+| Migración | Tablas |
+|---|---|
+| `003_create_grupo.sql` | `grupo`, `miembro_grupo` |
+| `004_create_gasto.sql` | `gasto`, `division_gasto`, `balance` |
+| `005_create_historial_recibo_notificacion.sql` | `historial_movimiento`, `recibo_escaneado`, `notificacion` |
+
+Las migraciones usan `IF NOT EXISTS`, así que `npm run migrate:dev` se puede volver a ejecutar sin perder datos.
+
+Extensiones respecto al documento técnico: `grupo` tiene además `icono`, `ciudad`, `latitud` y `longitud` (para las tarjetas y el mapa), y `historial_movimiento` admite también `grupo_creado` y `gasto_eliminado`.
+
+### Qué se guarda y cuándo
+
+| Acción en la interfaz | Tablas afectadas |
+|---|---|
+| Crear grupo | `grupo`, `miembro_grupo` (creador = administrador), `historial_movimiento`, `notificacion` |
+| Agregar integrante | `miembro_grupo`, `historial_movimiento`, `notificacion` |
+| Agregar gasto | `gasto`, `division_gasto` (una fila por participante), `balance` (recalculado), `historial_movimiento`, `notificacion` |
+| Gasto desde recibo escaneado | Lo anterior + `recibo_escaneado` |
+| "Pagué" / "Recibido" | `division_gasto.estado_pago = 'pagado'`, `balance`, `historial_movimiento` |
+| Liquidar deuda (panel) | `division_gasto` entre las dos personas, `balance`, `historial_movimiento` |
+| Eliminar gasto | borra `gasto` y sus `division_gasto`, recalcula `balance` |
+
+### Endpoints (requieren `Authorization: Bearer <accessToken>`)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/panel/resumen` | Balance neto, te deben, debes, liquidaciones y grupos |
+| GET | `/api/grupos` | Grupos activos del usuario con miembros, totales y balance |
+| POST | `/api/grupos` | Crear grupo `{ nombre, descripcion?, icono?, ciudad?, lat?, lng?, integrantes: [{ email }] }` |
+| POST | `/api/grupos/:id/miembros` | Agregar integrante `{ email }` (solo administrador) |
+| DELETE | `/api/grupos/:id` | Archivar grupo (solo administrador) |
+| GET | `/api/gastos` | Gastos de mis grupos con divisiones y "mi parte" |
+| POST | `/api/gastos` | Registrar gasto `{ grupo_id, pagador_id, descripcion, monto_total, fecha_gasto, categoria, tipo_division, divisiones: [{ usuario_id, monto_asignado? }], origen_registro?, recibo? }` |
+| DELETE | `/api/gastos/:id` | Eliminar gasto (quien pagó o el administrador) |
+| POST | `/api/gastos/:id/pagar` | Marcar pagada una parte `{ usuario_id? }` (el deudor o quien pagó) |
+| POST | `/api/balances/liquidar` | Saldar el balance entre dos personas `{ grupo_id, de, para }` |
+| GET | `/api/historial?limite=50` | Movimientos de `historial_movimiento` de mis grupos |
+
+### Reglas de negocio (motor de cálculo)
+
+- Los integrantes de un grupo deben ser **usuarios registrados**: se agregan por su correo.
+- Solo los miembros activos de un grupo pueden ver o registrar sus gastos (403 en otro caso).
+- División **equitativa**: el servidor reparte el monto sin perder pesos por redondeo.
+- División **personalizada**: la suma de las partes debe ser igual al monto total (400 si no).
+- La parte de quien pagó queda marcada como pagada desde el inicio.
+- `balance` guarda el **saldo neto por pares** en cada grupo (si A le debe 100 a B y B le debe 30 a A, queda A → B: 70). Se recalcula después de cada cambio.
+
+La lógica pura está en `src/domain/services/MotorCalculo.ts` y tiene pruebas en `tests/unit/MotorCalculo.test.ts`.

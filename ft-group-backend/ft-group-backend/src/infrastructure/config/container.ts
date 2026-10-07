@@ -9,12 +9,22 @@ import { RefrescarTokenUseCaseImpl } from '../../application/usecases/RefrescarT
 import { CerrarSesionUseCaseImpl } from '../../application/usecases/CerrarSesionUseCaseImpl';
 import { ObtenerPerfilUseCaseImpl } from '../../application/usecases/ObtenerPerfilUseCaseImpl';
 import { env } from './env';
+import {
+  PostgresBalanceRepository, PostgresGastoRepository, PostgresGrupoRepository, PostgresHistorialRepository,
+  PostgresNotificacionRepository,
+} from '../adapters/out/persistence/postgres/PostgresFinanzasRepositories';
+import { RecalcularBalances } from '../../application/usecases/finanzas/soporte';
+import {
+  AgregarMiembroUseCaseImpl, ArchivarGrupoUseCaseImpl, CrearGrupoUseCaseImpl, ListarGruposUseCaseImpl,
+} from '../../application/usecases/finanzas/GruposUseCases';
+import {
+  EliminarGastoUseCaseImpl, LiquidarDeudaUseCaseImpl, ListarGastosUseCaseImpl, RegistrarGastoUseCaseImpl,
+  RegistrarPagoUseCaseImpl,
+} from '../../application/usecases/finanzas/GastosUseCases';
+import { ListarHistorialUseCaseImpl, ObtenerResumenUseCaseImpl } from '../../application/usecases/finanzas/PanelUseCases';
 import { ActualizarPerfilUseCaseImpl } from '../../application/usecases/ActualizarPerfilUseCaseImpl';
 import { DesactivarCuentaUseCaseImpl } from '../../application/usecases/DesactivarCuentaUseCaseImpl';
 import { ActivarCuentaUseCaseImpl } from '../../application/usecases/ActivarCuentaUseCaseImpl';
-import { GrupoGastoService } from '../../application/services/GrupoGastoService';
-import { PostgresGrupoGastoRepository } from '../adapters/out/persistence/postgres/PostgresGrupoGastoRepository';
-import { GrupoGastoController } from '../adapters/in/http/controllers/GrupoGastoController';
 
 /**
  * "Composition root" / contenedor de dependencias manual.
@@ -55,9 +65,32 @@ export const actualizarPerfilUseCase = new ActualizarPerfilUseCaseImpl(usuarioRe
 export const desactivarCuentaUseCase = new DesactivarCuentaUseCaseImpl(usuarioRepository, refreshTokenRepository);
 export const activarCuentaUseCase = new ActivarCuentaUseCaseImpl(usuarioRepository);
 
-const grupoGastoRepository = new PostgresGrupoGastoRepository(pool);
-const grupoGastoService = new GrupoGastoService(grupoGastoRepository);
-export const grupoGastoController = new GrupoGastoController(grupoGastoService);
+// --- Modulos financieros: grupos, gastos, motor de calculo, historial, panel ---
+const grupoRepository = new PostgresGrupoRepository(pool);
+const gastoRepository = new PostgresGastoRepository(pool);
+const balanceRepository = new PostgresBalanceRepository(pool);
+const historialRepository = new PostgresHistorialRepository(pool);
+const notificacionRepository = new PostgresNotificacionRepository(pool);
+const recalcularBalances = new RecalcularBalances(gastoRepository, balanceRepository);
+
+export const crearGrupoUseCase = new CrearGrupoUseCaseImpl(
+  grupoRepository, usuarioRepository, gastoRepository, balanceRepository, historialRepository, notificacionRepository);
+export const listarGruposUseCase = new ListarGruposUseCaseImpl(grupoRepository, gastoRepository, balanceRepository);
+export const agregarMiembroUseCase = new AgregarMiembroUseCaseImpl(
+  grupoRepository, usuarioRepository, gastoRepository, balanceRepository, historialRepository, notificacionRepository);
+export const archivarGrupoUseCase = new ArchivarGrupoUseCaseImpl(grupoRepository);
+
+export const registrarGastoUseCase = new RegistrarGastoUseCaseImpl(
+  grupoRepository, gastoRepository, recalcularBalances, historialRepository, notificacionRepository);
+export const listarGastosUseCase = new ListarGastosUseCaseImpl(grupoRepository, gastoRepository);
+export const eliminarGastoUseCase = new EliminarGastoUseCaseImpl(grupoRepository, gastoRepository, recalcularBalances, historialRepository);
+export const registrarPagoUseCase = new RegistrarPagoUseCaseImpl(
+  grupoRepository, gastoRepository, recalcularBalances, historialRepository, notificacionRepository);
+export const liquidarDeudaUseCase = new LiquidarDeudaUseCaseImpl(
+  grupoRepository, gastoRepository, recalcularBalances, historialRepository, notificacionRepository);
+
+export const obtenerResumenUseCase = new ObtenerResumenUseCaseImpl(grupoRepository, gastoRepository, balanceRepository);
+export const listarHistorialUseCase = new ListarHistorialUseCaseImpl(grupoRepository, historialRepository);
 
 // Exportado para que el middleware de autenticacion pueda verificar
 // access tokens sin duplicar la logica de JWT.
