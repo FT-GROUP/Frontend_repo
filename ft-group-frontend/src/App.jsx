@@ -9,6 +9,7 @@ import Groups from './pages/Groups'
 import Expenses from './pages/Expenses'
 import History from './pages/History'
 import Scan from './pages/Scan'
+import Indicadores from './pages/Indicadores'
 import Profile from './pages/Profile'
 import logoUrl from './assets/ft-logo.svg'
 
@@ -48,6 +49,7 @@ export default function App() {
       <Route path="/grupos" element={page(<Groups {...props} />)} />
       <Route path="/gastos" element={page(<Expenses {...props} />)} />
       <Route path="/historial" element={page(<History {...props} />)} />
+      <Route path="/indicadores" element={page(<Indicadores {...props} />)} />
       <Route path="/escanear" element={page(<Scan {...props} />)} />
       <Route path="/perfil" element={page(<Profile user={user} setUser={setUser} onLogout={logout} />)} />
       <Route path="*" element={<Navigate to={user ? '/panel' : '/login'} replace />} />

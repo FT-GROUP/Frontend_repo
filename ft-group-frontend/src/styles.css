@@ -495,3 +495,37 @@ h1, h2, h3 { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+/* ---------- Indicadores y proyecciones ---------- */
+
+.chart {
+  display: flex; align-items: flex-end; gap: 6px;
+  height: 220px; padding: 18px 18px 0; overflow-x: auto;
+}
+.chart-col { flex: 1 0 44px; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.chart-value { font-size: 10px; color: var(--muted-2); margin-bottom: 4px; white-space: nowrap; }
+.chart-bar {
+  width: 100%; border-radius: 6px 6px 0 0; margin-top: auto;
+  background: linear-gradient(180deg, var(--accent-hi), var(--accent));
+}
+.chart-col-est .chart-bar {
+  background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 5px, var(--line-2) 5px, var(--line-2) 10px);
+  border: 1px dashed var(--accent);
+}
+.chart-col-est .chart-value { color: var(--accent); }
+.chart-label { font-size: 10px; color: var(--muted); padding: 6px 0 14px; white-space: nowrap; }
+
+.dist-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.dist-row:first-child { border-top: 0; }
+.dist-track { height: 6px; border-radius: 3px; background: var(--inset); margin-top: 6px; overflow: hidden; }
+.dist-track i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+.dist-end { text-align: right; white-space: nowrap; }
+.dist-end small { display: block; font-size: 11px; color: var(--muted); }
+
+.proj-head { padding: 18px 18px 4px; }
+.proj-head .total-big { display: block; margin: 2px 0 4px; }
+.proj-head small { display: block; }
+
+@media (max-width: 720px) {
+  .hide-sm { display: none; }
+  .chart { height: 180px; }
+}
