@@ -12,6 +12,9 @@ import { env } from './env';
 import { ActualizarPerfilUseCaseImpl } from '../../application/usecases/ActualizarPerfilUseCaseImpl';
 import { DesactivarCuentaUseCaseImpl } from '../../application/usecases/DesactivarCuentaUseCaseImpl';
 import { ActivarCuentaUseCaseImpl } from '../../application/usecases/ActivarCuentaUseCaseImpl';
+import { GrupoGastoService } from '../../application/services/GrupoGastoService';
+import { PostgresGrupoGastoRepository } from '../adapters/out/persistence/postgres/PostgresGrupoGastoRepository';
+import { GrupoGastoController } from '../adapters/in/http/controllers/GrupoGastoController';
 
 /**
  * "Composition root" / contenedor de dependencias manual.
@@ -51,6 +54,10 @@ export const obtenerPerfilUseCase = new ObtenerPerfilUseCaseImpl(usuarioReposito
 export const actualizarPerfilUseCase = new ActualizarPerfilUseCaseImpl(usuarioRepository);
 export const desactivarCuentaUseCase = new DesactivarCuentaUseCaseImpl(usuarioRepository, refreshTokenRepository);
 export const activarCuentaUseCase = new ActivarCuentaUseCaseImpl(usuarioRepository);
+
+const grupoGastoRepository = new PostgresGrupoGastoRepository(pool);
+const grupoGastoService = new GrupoGastoService(grupoGastoRepository);
+export const grupoGastoController = new GrupoGastoController(grupoGastoService);
 
 // Exportado para que el middleware de autenticacion pueda verificar
 // access tokens sin duplicar la logica de JWT.

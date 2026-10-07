@@ -33,6 +33,28 @@ export class UsuarioNoEncontradoError extends DomainError {
   }
 }
 
+export class GrupoNoEncontradoError extends DomainError {
+  constructor(identificador: number) {
+    super(`No se encontro el grupo "${identificador}".`);
+  }
+}
+
+export class GastoNoEncontradoError extends DomainError {
+  constructor(identificador: number) {
+    super(`No se encontro el gasto "${identificador}".`);
+  }
+}
+
+export class NotificacionNoEncontradaError extends DomainError {
+  constructor(identificador: number) {
+    super(`No se encontro la notificacion "${identificador}".`);
+  }
+}
+
+export class AccesoDenegadoError extends DomainError {}
+
+export class ConflictoEstadoError extends DomainError {}
+
 export class UsuarioInactivoError extends DomainError {
   constructor() {
     super('El usuario se encuentra inactivo o bloqueado y no puede iniciar sesion.');

@@ -1,9 +1,12 @@
-# FT. GROUP — Backend (Módulo de Usuarios)
+# FT. GROUP — Backend y servicios financieros
 
-Backend funcional del **Sistema Web de Gestión y División de Gastos Compartidos**
-(FT. GROUP, Grupo 2, Universidad de San Buenaventura), implementando el
-**módulo de usuarios / autenticación** sobre la **Arquitectura Hexagonal
-(Ports & Adapters)** definida en el documento oficial de arquitectura.
+Backend del **Sistema Web de Gestión y División de Gastos Compartidos**
+(FT. GROUP, Grupo 2, Universidad de San Buenaventura), con autenticación,
+gestión de grupos, gastos compartidos, balances, historial, notificaciones y
+reportes sobre la **Arquitectura Hexagonal (Ports & Adapters)** definida en el
+documento oficial de arquitectura. Los servicios comparten la API Express y la
+base de datos PostgreSQL, de acuerdo con esa arquitectura; no son despliegues
+independientes.
 
 **Stack:** Node.js + Express + TypeScript + PostgreSQL + JWT + Bcrypt.
 
@@ -15,13 +18,16 @@ Backend funcional del **Sistema Web de Gestión y División de Gastos Compartido
 src/
 ├── domain/                 # NÚCLEO: no depende de Express, ni de pg, ni de JWT
 │   ├── entities/            → Usuario (reglas de negocio puras)
+│   ├── services/            → Reglas de dominio para división de gastos
 │   ├── errors/               → Errores de negocio (EmailYaRegistradoError, etc.)
 │   └── ports/
 │       ├── in/               → Contratos de los casos de uso (lo que el exterior puede pedir)
 │       └── out/               → Contratos que el núcleo exige a la infraestructura
 │                                (UsuarioRepository, PasswordHasher, TokenService...)
 │
-├── application/usecases/   # Capa de aplicación: coordina el dominio y los puertos de salida
+├── application/            # Casos de uso y servicios de aplicación
+│   ├── services/            → Grupos, gastos, pagos e indicadores
+│   └── usecases/            → Casos de uso de usuario y autenticación
 │   ├── RegistrarUsuarioUseCaseImpl.ts
 │   ├── IniciarSesionUseCaseImpl.ts
 │   ├── RefrescarTokenUseCaseImpl.ts
@@ -35,7 +41,7 @@ src/
 │   │   ├── middlewares/       → Validación (Zod), autenticación (JWT), manejo de errores
 │   │   └── validators/        → Esquemas de validación de entrada
 │   ├── adapters/out/
-│   │   ├── persistence/postgres/ → PostgresUsuarioRepository, PostgresRefreshTokenRepository
+│   │   ├── persistence/postgres/ → Repositorios PostgreSQL de usuarios y finanzas
 │   │   └── security/              → BcryptPasswordHasher, JwtTokenService
 │   └── config/
 │       ├── env.ts             → Único lugar que lee variables de entorno
@@ -45,8 +51,8 @@ src/
 ├── app.ts                   # Configuración de Express (middlewares, rutas)
 └── server.ts                # Punto de entrada: conecta a la BD y levanta el servidor
 
-db/migrations/               # SQL de las tablas usuario y refresh_token
-tests/unit/                  # Pruebas de los casos de uso con MOCKS de los puertos
+db/migrations/               # SQL de usuarios, grupos, gastos y actividad
+tests/unit/                  # Pruebas de dominio y aplicación
 ```
 
 **Regla de oro de esta arquitectura:** el código dentro de `domain/` y
@@ -80,7 +86,7 @@ docker compose up -d
 #    Opción B: usar un PostgreSQL que ya tengas instalado localmente,
 #    ajustando DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME en .env
 
-# 4) Ejecutar las migraciones (crea las tablas usuario y refresh_token)
+# 4) Ejecutar las migraciones (usuarios y módulos financieros)
 npm run migrate:dev
 
 # 5) Levantar el servidor en modo desarrollo (recarga automática)
@@ -116,6 +122,42 @@ Todos los cuerpos de petición/respuesta son JSON.
 | POST   | `/api/auth/logout`    | Revoca un refresh token                         | No             |
 | GET    | `/api/auth/me`        | Devuelve el perfil del usuario autenticado      | Sí (Bearer)    |
 | GET    | `/health`             | Chequeo de salud del servicio                   | No             |
+
+### Servicios financieros y analíticos
+
+Todas estas rutas requieren `Authorization: Bearer <accessToken>`.
+
+| Método | Ruta | Función |
+|--------|------|---------|
+| GET / POST | `/api/grupos` | Listar los grupos propios / crear un grupo (el creador queda como administrador). |
+| GET | `/api/grupos/:grupoId/integrantes` | Consultar integrantes activos del grupo. |
+| POST | `/api/grupos/:grupoId/integrantes` | Agregar un integrante (JSON `{ "usuarioId": 2 }`). Solo administradores gestionan integrantes. |
+| DELETE | `/api/grupos/:grupoId/integrantes/:usuarioId` | Retirar un integrante; el grupo conserva un administrador activo. |
+| GET / POST | `/api/grupos/:grupoId/gastos` | Consultar o registrar gastos con división equitativa o personalizada. |
+| POST | `/api/grupos/gastos/:gastoId/pagos` | Confirmar el pago pendiente del usuario autenticado. |
+| GET | `/api/grupos/:grupoId/balances` | Consultar balances netos del integrante autenticado. |
+| GET | `/api/grupos/:grupoId/historial` | Consultar movimientos recientes del grupo. |
+| GET | `/api/reportes/resumen` | KPIs personales y proyección mensual mediante promedio móvil de los tres meses completos previos. |
+| GET | `/api/notificaciones` | Listar las notificaciones del usuario autenticado. |
+| PATCH | `/api/notificaciones/:notificacionId/leida` | Marcar una notificación propia como leída. |
+
+Ejemplo de gasto equitativo:
+
+```json
+{
+  "descripcion": "Compra compartida",
+  "montoTotal": 30,
+  "fechaGasto": "2026-10-06",
+  "categoria": "Comida",
+  "tipoDivision": "equitativa",
+  "usuarioIds": [1, 2, 3]
+}
+```
+
+El servicio reparte los importes en centavos para conservar exactamente el
+monto total. El alta del gasto, sus participaciones, movimientos, notificaciones
+y el recálculo de balances se ejecutan dentro de una transacción. Las migraciones
+`003_modulos_financieros.sql` crean las tablas e índices de estos módulos.
 
 ### Ejemplos con `curl`
 

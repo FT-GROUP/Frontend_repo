@@ -1,7 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 import {
+  AccesoDenegadoError,
   CredencialesInvalidasError,
+  ConflictoEstadoError,
   EmailYaRegistradoError,
+  GastoNoEncontradoError,
+  GrupoNoEncontradoError,
+  NotificacionNoEncontradaError,
   TokenInvalidoError,
   UsuarioInactivoError,
   UsuarioNoEncontradoError,
@@ -25,17 +30,22 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
+  if (err instanceof ConflictoEstadoError) {
+    res.status(409).json({ error: err.name, mensaje: err.message });
+    return;
+  }
+
   if (err instanceof CredencialesInvalidasError || err instanceof TokenInvalidoError) {
     res.status(401).json({ error: err.name, mensaje: err.message });
     return;
   }
 
-  if (err instanceof UsuarioInactivoError) {
+  if (err instanceof UsuarioInactivoError || err instanceof AccesoDenegadoError) {
     res.status(403).json({ error: err.name, mensaje: err.message });
     return;
   }
 
-  if (err instanceof UsuarioNoEncontradoError) {
+  if (err instanceof UsuarioNoEncontradoError || err instanceof GrupoNoEncontradoError || err instanceof GastoNoEncontradoError || err instanceof NotificacionNoEncontradaError) {
     res.status(404).json({ error: err.name, mensaje: err.message });
     return;
   }
