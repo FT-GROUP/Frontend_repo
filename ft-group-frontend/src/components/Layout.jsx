@@ -10,6 +10,7 @@ export const NAV = [
   { to: '/grupos', label: 'Grupos financieros', short: 'Grupos', icon: 'layers' },
   { to: '/gastos', label: 'Registro de gastos', short: 'Gastos', icon: 'receipt' },
   { to: '/historial', label: 'Historial financiero', short: 'Historial', icon: 'chart' },
+  { to: '/indicadores', label: 'Indicadores', short: 'Indicadores', icon: 'sparkles' },
   { to: '/escanear', label: 'Escanear', short: 'Escanear', icon: 'scan', badge: 'IA' },
 ]
 
