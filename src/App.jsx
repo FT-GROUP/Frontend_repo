@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Groups from './pages/Groups'
 import Expenses from './pages/Expenses'
 import History from './pages/History'
-import Analytics from './pages/Analytics'
+import Analisis from './pages/Analisis'
 import Scan from './pages/Scan'
 import Profile from './pages/Profile'
 import BrandMark from './components/BrandMark'
@@ -49,7 +49,8 @@ export default function App() {
       <Route path="/grupos" element={page(<Groups {...props} />)} />
       <Route path="/gastos" element={page(<Expenses {...props} />)} />
       <Route path="/historial" element={page(<History {...props} />)} />
-      <Route path="/analisis" element={page(<Analytics {...props} />)} />
+      <Route path="/analisis" element={page(<Analisis {...props} />)} />
+      <Route path="/indicadores" element={<Navigate to="/analisis" replace />} />
       <Route path="/escanear" element={page(<Scan {...props} />)} />
       <Route path="/perfil" element={page(<Profile user={user} setUser={setUser} onLogout={logout} />)} />
       <Route path="*" element={<Navigate to={user ? '/panel' : '/login'} replace />} />
