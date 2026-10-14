@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { financeApi } from '../services/financeApi'
 import { useData } from '../utils/useData'
 import { analizar } from '../utils/analitica'
+import { calcularKpis } from '../utils/kpis'
 import { categoria, money, moneyShort, monthLabel, shortDate } from '../utils/format'
 import { Alert, Chips, Empty, Loader, PageHeader } from '../components/ui'
 import Icon from '../components/Icon'
@@ -55,10 +56,91 @@ function Distribucion({ datos, total }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* KPIs básicos                                                        */
+/* ------------------------------------------------------------------ */
+
+const ESTADOS = { ok: 'En meta', alerta: 'Atención', critico: 'Fuera de meta', neutro: 'Informativo' }
+
+function formatear(valor, formato) {
+  if (valor === null || valor === undefined) return '—'
+  if (formato === 'money') return money(valor)
+  if (formato === 'pct') return `${valor.toFixed(1).replace('.', ',')} %`
+  if (formato === 'dias') return `${valor.toFixed(1).replace('.', ',')} días`
+  return String(Math.round(valor))
+}
+
+function Tendencia({ kpi, mesAnterior }) {
+  if (kpi.anterior === undefined) return null
+  if (kpi.variacion === null) return <span className="kpi-trend flat">Sin datos de {mesAnterior} para comparar</span>
+  const v = kpi.variacion
+  const dir = Math.abs(v) < 0.5 ? 'flat' : v > 0 ? 'up' : 'down'
+  // En gasto, subir es malo (rojo); en conteos solo se informa la dirección.
+  const cls = kpi.invertido ? dir : 'flat'
+  const flecha = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '='
+  return (
+    <span className={`kpi-trend ${cls}`}>
+      {flecha} {Math.abs(v).toFixed(1).replace('.', ',')} % vs {mesAnterior} ({formatear(kpi.anterior, kpi.formato)})
+    </span>
+  )
+}
+
+function Kpis({ resultado }) {
+  const { kpis, periodo, resumen } = resultado
+  const mesAnterior = monthLabel(`${periodo.anterior.periodo}-01`).split(' ')[0].toLowerCase()
+  return (
+    <section className="section">
+      <div className="section-head">
+        <h2 className="section-title">KPIs básicos</h2>
+        <span className="pill">{monthLabel(`${periodo.actual.periodo}-01`)} · día {periodo.dia}</span>
+      </div>
+
+      <div className="kpi-grid">
+        {kpis.map(k => (
+          <article key={k.id} className={`kpi kpi-${k.estado}`}>
+            <div className="kpi-head">
+              <span className="kpi-name">{k.nombre}</span>
+              <span className={`dot dot-${k.estado}`} title={ESTADOS[k.estado]} aria-label={ESTADOS[k.estado]} />
+            </div>
+            <strong className="kpi-value">{formatear(k.valor, k.formato)}</strong>
+            <Tendencia kpi={k} mesAnterior={mesAnterior} />
+            {k.detalle && <span className="kpi-sub">{k.detalle}</span>}
+            {k.meta && <span className="kpi-meta">Meta: {k.meta}</span>}
+          </article>
+        ))}
+      </div>
+
+      <div className="kpi-legend">
+        <span><i className="dot dot-ok" />En meta</span>
+        <span><i className="dot dot-alerta" />Atención</span>
+        <span><i className="dot dot-critico" />Fuera de meta</span>
+        <span><i className="dot" />Informativo</span>
+        <span>· {resumen.grupos_con_gasto_mes} de {resumen.grupos_activos} grupos con gastos este mes</span>
+      </div>
+
+      <details className="card kpi-formulas" style={{ marginTop: 14 }}>
+        <summary>¿Cómo se calcula cada KPI?</summary>
+        <table className="table table-keep" style={{ marginTop: 10 }}>
+          <thead><tr><th>KPI</th><th>Fórmula</th></tr></thead>
+          <tbody>
+            {kpis.map(k => (
+              <tr key={k.id}><td><strong>{k.nombre}</strong></td><td><small className="muted">{k.formula}</small></td></tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="hint">
+          El mes en curso se compara con el mes anterior hasta el mismo día, para que un mes que
+          apenas empieza no parezca más bajo de lo que es.
+        </p>
+      </details>
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /* Página                                                              */
 /* ------------------------------------------------------------------ */
 
-export default function Indicadores({ user }) {
+export default function Analisis({ user }) {
   const me = String(user.id)
   const { data, error, loading } = useData(
     async () => ({ gastos: await financeApi.expenses(user), grupos: await financeApi.groups(user) }),
@@ -72,6 +154,11 @@ export default function Indicadores({ user }) {
     [data, grupo],
   )
 
+  const kpis = useMemo(() => {
+    const grupos = (data?.grupos || []).filter(g => grupo === 'todos' || g.id === grupo)
+    return calcularKpis(gastos, grupos, me)
+  }, [data, gastos, grupo, me])
+
   const analisis = useMemo(
     () => (gastos.length ? analizar(gastos, me, { horizonte: Number(horizonte) }) : null),
     [gastos, me, horizonte],
@@ -83,7 +170,7 @@ export default function Indicadores({ user }) {
   if (!analisis) {
     return (
       <>
-        <PageHeader title="Indicadores y proyecciones" />
+        <PageHeader title="Análisis y predicciones" />
         <Empty icon="chart" title="Sin datos para analizar"
           text="Registra gastos para que el sistema calcule indicadores y proyecciones." />
       </>
@@ -100,7 +187,7 @@ export default function Indicadores({ user }) {
   return (
     <>
       <PageHeader
-        title="Indicadores y proyecciones"
+        title="Análisis y predicciones"
         subtitle={`${ind.num_gastos} gastos analizados · ${ind.serie.length} meses de histórico`} />
 
       <div className="filters">
@@ -109,7 +196,10 @@ export default function Indicadores({ user }) {
           options={[{ id: '3', label: '3 meses' }, { id: '6', label: '6 meses' }]} />
       </div>
 
+      <Kpis resultado={kpis} />
+
       {/* ---------------- Indicadores principales ---------------- */}
+      <h2 className="section-title" style={{ marginTop: 28 }}>Indicadores</h2>
       <div className="stats">
         <div className="stat">
           <span className="stat-label">Gasto mensual promedio</span>
@@ -155,7 +245,7 @@ export default function Indicadores({ user }) {
             </div>
           </div>
 
-          <table className="table">
+          <table className="table table-keep">
             <thead>
               <tr><th>Método</th><th>Estimación</th><th className="hide-sm">Cómo se calcula</th></tr>
             </thead>
@@ -251,7 +341,7 @@ export default function Indicadores({ user }) {
             text="Ningún gasto se aleja más de dos desviaciones del promedio." />
         ) : (
           <div className="card">
-            <table className="table">
+            <table className="table table-keep">
               <thead>
                 <tr><th>Gasto</th><th className="hide-sm">Fecha</th><th>Monto</th><th>Desviación</th></tr>
               </thead>

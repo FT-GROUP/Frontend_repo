@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # FT. GROUP — Frontend
 
 Frontend web (React + Vite) de FT. GROUP, basado en los prototipos de las versiones portátil y tablet. Tiene tema oscuro con acentos naranja y se adapta a portátil, tablet y celular.
@@ -11,6 +10,7 @@ Frontend web (React + Vite) de FT. GROUP, basado en los prototipos de las versio
 | `/panel` | Panel de control: balance neto, te deben / debes, liquidaciones sugeridas, mis grupos, mapa | **Backend real** |
 | `/grupos` | Grupos financieros: tarjetas con miembros, total y mi balance; crear grupo; agregar integrantes | **Backend real** |
 | `/gastos` | Registro de gastos: filtro por grupo, tabla (tarjetas en celular), agregar gasto con división igual o personalizada, detalle y registro de pagos | **Backend real** |
+| `/analisis` | Análisis y predicciones: KPIs básicos con semáforo, indicadores, estimadores, proyección y gastos atípicos | Se calcula en el navegador con los datos de gastos y grupos |
 | `/historial` | Historial por mes con filtros de grupo y categoría, total filtrado y movimientos recientes | **Backend real** |
 | `/escanear` | Escaneo de recibos: carga/arrastre o cámara del celular, OCR con Tesseract.js y formulario prellenado | **Backend real** |
 | `/perfil` | Ver/editar nombre y teléfono, desactivar cuenta, cerrar sesión | **Backend real** |
@@ -34,7 +34,7 @@ docker compose up -d
 npm run migrate:dev
 npm run dev            # http://localhost:3000
 
-# 2. Frontend (en esta carpeta)
+# 2. Frontend (en la raíz del repositorio; es el único frontend)
 cp .env.example .env
 npm install
 npm run dev            # http://localhost:5173
@@ -64,8 +64,10 @@ src/
 │   ├── financeApi.js       grupos, gastos, balances, historial (API o modo local)
 │   └── ocr.js              preprocesamiento, OCR y extracción de campos del recibo
 ├── utils/balances.js       motor de cálculo: división igual, saldos netos, balance por pares
+├── utils/kpis.js           KPIs básicos con metas y semáforo
+├── utils/analitica.js      indicadores, estimadores y proyección
 ├── components/             Layout, ExpenseForm, MapView, Icon, ui (Modal, Avatar, Chips…)
-└── pages/                  Auth, Dashboard, Groups, Expenses, History, Scan, Profile
+└── pages/                  Auth, Dashboard, Groups, Expenses, History, Analisis, Scan, Profile
 ```
 
 ## Cambios respecto al frontend inicial
@@ -79,86 +81,30 @@ src/
 
 El OCR se ejecuta en el navegador con Tesseract.js (idioma español). La primera vez descarga el modelo, unos pocos MB, así que necesita internet. La lectura es aproximada, por eso el usuario siempre revisa y confirma los datos antes de guardar. Los PDF se adjuntan, pero sus datos se ingresan a mano.
 
-## Análisis y predicciones
-Ruta `/analisis`. Consume el microservicio `ft-group-analytics` (puerto 4000, ver su README).
-Configura `VITE_ANALYTICS_URL` (por defecto `http://localhost:4000/api`). Si el servicio está apagado la página muestra un aviso.
-=======
-# FT. GROUP — Backend + Frontend inicial
+## Análisis y predicciones (`/analisis`)
 
-Proyecto integrado para la primera versión del sistema web de gestión y división de gastos compartidos.
+Todo se calcula en el navegador a partir de los gastos y grupos que ya entrega `financeApi`. No hace falta ningún servicio adicional y funciona tanto en modo `api` como en modo `local`. La antigua ruta `/indicadores` redirige aquí.
 
-## Incluye
+**KPIs básicos** (`src/utils/kpis.js`). Cada KPI tiene una meta y un semáforo: en meta, atención, fuera de meta o informativo. El mes en curso se compara con el mes anterior hasta el mismo día.
 
-### Backend
-- Node.js + Express + TypeScript.
-- PostgreSQL.
-- Arquitectura hexagonal.
-- Módulo de usuarios.
-- Registro, login, refresh, logout y perfil.
-- Actualización y desactivación/activación de cuenta.
-- JWT + Bcrypt + validación Zod.
-- Helmet, CORS y consultas parametrizadas.
+| KPI | Fórmula | Meta |
+|---|---|---|
+| Gasto del mes | Σ monto_total del mes hasta hoy | No superar el mes anterior al mismo día (atención hasta +15 %) |
+| Gastos registrados | Cantidad de gastos del mes | Informativo |
+| Ticket promedio | Gasto del mes ÷ gastos registrados | Informativo |
+| Gasto por integrante | Gasto del mes ÷ integrantes únicos | Informativo |
+| Tasa de recaudo | (adeudado − pendiente) ÷ adeudado | ≥ 80 % (atención desde 60 %) |
+| Cartera pendiente | Σ partes pendientes, sin contar al pagador | ≤ 20 % de las partes sin pagar |
+| Antigüedad de la cartera | Días promedio de las partes pendientes | ≤ 15 días (atención hasta 30) |
+| Mi aporte del mes | Lo que pagaste ÷ gasto del mes | Informativo |
 
-### Frontend inicial
-- React + Vite.
-- Login funcional conectado al backend.
-- Registro funcional.
-- Dashboard protegido por autenticación.
-- Consulta y actualización de perfil.
-- Cierre de sesión.
-- Dashboard con indicadores básicos.
-- Mapa funcional con Leaflet/OpenStreetMap y marcadores de ejemplo.
+Los umbrales están en `METAS`, dentro de `kpis.js`.
 
-## Estructura
+**Indicadores y estimadores** (`src/utils/analitica.js`):
+- **Indicadores:** gasto mensual promedio, ticket promedio y mediano, cumplimiento de pago, días para saldar, frecuencia, concentración de aportes (Herfindahl), % de gastos con OCR y distribución por categoría.
+- **Estimadores:** run rate, media móvil, regresión lineal (R²) y suavizado exponencial, combinados en un consenso.
+- **Predicciones:** proyección de 3 o 6 meses con índice estacional y detección de gastos atípicos (puntaje z).
 
-```text
-ft-group-completo/
-├── ft-group-backend/
-│   └── ft-group-backend/
-└── ft-group-frontend/
-```
+**Datos históricos de prueba (modo local).** Inicia sesión, abre la consola del navegador, pega `scripts/seed-historico.js` y recarga la página. Así se cargan 12 meses de gastos.
 
-## Cómo ejecutar
-
-### 1. Backend
-
-En `ft-group-backend/ft-group-backend`:
-
-```bash
-npm install
-docker compose up -d
-npm run migrate:dev
-npm run dev
-```
-
-Debe quedar disponible en `http://localhost:3000`.
-
-### 2. Frontend
-
-En `ft-group-frontend`:
-
-```bash
-npm install
-npm run dev
-```
-
-Abrir `http://localhost:5173`.
-
-El frontend utiliza `VITE_API_URL=http://localhost:3000/api` por defecto.
-
-## Flujo para probar
-
-1. Entrar a `/registro` y crear un usuario.
-2. Volver al login.
-3. Iniciar sesión.
-4. El frontend consulta `/api/auth/me` y muestra el dashboard.
-5. Entrar a **Mi perfil** para actualizar nombre/teléfono.
-6. Cerrar sesión y comprobar que las rutas protegidas vuelven al login.
-7. El dashboard muestra el mapa y sus marcadores.
-
-## Nota sobre cookies seguras
-
-El backend recibido implementa JWT y refresh tokens, pero actualmente expone el refresh token en la respuesta JSON y espera ese token en el cuerpo de `/refresh` y `/logout`. Por eso el frontend de esta entrega conserva los tokens en `sessionStorage` para ser compatible con el backend existente.
-
-Si el requisito de la entrega exige específicamente una cookie `HttpOnly`, `Secure` y `SameSite`, se debe hacer un pequeño ajuste adicional en el backend para mover el refresh token a una cookie segura y habilitar CORS con credenciales. No se oculta esta diferencia: es importante para que la documentación del proyecto sea coherente con lo que realmente está implementado.
->>>>>>> origin/main
+**Pruebas:** `npm test` ejecuta las pruebas de KPIs y modelos con el runner nativo de Node (`tests/`).
