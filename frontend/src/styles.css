@@ -113,7 +113,7 @@ h1, h2, h3 { margin: 0; }
 }
 .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--pos); box-shadow: 0 0 0 3px rgba(74, 222, 128, .18); }
 .status-off i { background: var(--danger); box-shadow: 0 0 0 3px rgba(248, 113, 113, .18); }
-.content { width: 100%; max-width: 1080px; padding: 32px 28px 56px; }
+.content { width: 100%; max-width: 1200px; margin-inline: auto; padding: 32px 28px 56px; }
 .tabbar, .scrim { display: none; }
 
 /* ---------- Encabezados ---------- */
