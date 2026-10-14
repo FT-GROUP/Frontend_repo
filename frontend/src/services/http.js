@@ -30,15 +30,20 @@ async function rawRequest(path, { method = 'GET', body, auth = false } = {}) {
   const headers = { 'Content-Type': 'application/json' }
   if (auth && tokens.access) headers.Authorization = `Bearer ${tokens.access}`
 
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 2500)
   let response
   try {
     response = await fetch(`${API_URL}${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     })
   } catch {
     throw new ApiError('No fue posible conectar con el servidor. Verifica que el backend esté en ejecución.', 0)
+  } finally {
+    clearTimeout(timer)
   }
 
   if (response.status === 204) return null

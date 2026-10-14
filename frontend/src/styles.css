@@ -662,3 +662,192 @@ h1, h2, h3 { margin: 0; }
   .table-keep th, .table-keep td { padding: 10px 8px; font-size: 13px; }
   .table-keep .hide-sm { display: none; }
 }
+
+/* ============================================================
+   MODO VIVO — Tema claro ultra-vibrante con estética premium
+   ============================================================ */
+:root[data-theme="vivid"],
+body[data-theme="vivid"] {
+  --bg: #f8fafc;
+  --bg-2: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --inset: #f1f5f9;
+  --line: #e2e8f0;
+  --line-2: #cbd5e1;
+  --text: #0f172a;
+  --muted: #64748b;
+  --muted-2: #94a3b8;
+  --accent: #f97316;
+  --accent-hi: #ea580c;
+  --accent-soft: rgba(249, 115, 22, .14);
+  --pos: #16a34a;
+  --neg: #ea580c;
+  --danger: #ef4444;
+  --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  color-scheme: light;
+}
+
+[data-theme="vivid"] .topbar {
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="vivid"] .sidebar {
+  background: #ffffff;
+  border-right: 1px solid var(--line);
+}
+
+[data-theme="vivid"] .card {
+  box-shadow: 0 4px 18px rgba(15, 23, 42, .05);
+  background: #ffffff;
+  border: 1px solid var(--line);
+}
+
+[data-theme="vivid"] .nav-link {
+  color: #475569;
+}
+[data-theme="vivid"] .nav-link:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+[data-theme="vivid"] .nav-link.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+[data-theme="vivid"] .user-card {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+}
+
+[data-theme="vivid"] input,
+[data-theme="vivid"] select,
+[data-theme="vivid"] textarea {
+  background: #ffffff;
+  border-color: var(--line-2);
+  color: var(--text);
+}
+
+[data-theme="vivid"] .table-wrap {
+  border-color: var(--line);
+}
+[data-theme="vivid"] .table th {
+  background: #f8fafc;
+  color: var(--muted);
+}
+[data-theme="vivid"] .table tr:hover td {
+  background: #f8fafc;
+}
+
+[data-theme="vivid"] .btn-ghost {
+  border-color: var(--line-2);
+  color: var(--text);
+}
+
+[data-theme="vivid"] .auth-hero {
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  color: #ffffff;
+}
+[data-theme="vivid"] .auth-card {
+  background: #ffffff;
+}
+
+/* ---------- Switchers (Theme, Currency, Language) ---------- */
+.lang-switch-container { position: relative; display: inline-flex; }
+.lang-switch-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 999px;
+  color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.lang-switch-btn:hover { background: var(--surface-2); border-color: var(--accent); }
+.lang-chip {
+  font-size: 11px; font-weight: 700; background: var(--surface-2); color: var(--muted);
+  padding: 2px 6px; border-radius: 6px; letter-spacing: .5px;
+}
+.lang-code { letter-spacing: .5px; }
+.lang-auto-tag {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 5px;
+  background: var(--accent-soft); color: var(--accent-hi); border-radius: 999px; line-height: 1;
+}
+.lang-arrow { transition: transform .2s; }
+.lang-arrow.rotated { transform: rotate(180deg); }
+.lang-dropdown {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; min-width: 200px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px;
+  padding: 6px; box-shadow: var(--shadow); display: grid; gap: 2px;
+  animation: fadeIn .15s ease-out;
+}
+.lang-dropdown-header {
+  padding: 6px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px;
+}
+.lang-dropdown-header small { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+.lang-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; padding: 8px 10px; border: 0; background: transparent;
+  color: var(--text); font-size: 13px; font-weight: 500; border-radius: 8px;
+  text-align: left; cursor: pointer; transition: background .15s;
+}
+.lang-option:hover { background: var(--surface-2); }
+.lang-option.active { background: var(--accent-soft); color: var(--accent-hi); font-weight: 600; }
+
+.theme-switch-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 6px 12px; height: 34px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line-2);
+  color: var(--text); cursor: pointer; transition: all .15s ease;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.theme-switch-btn.compact {
+  width: 34px; height: 34px; padding: 0;
+}
+.theme-switch-btn:hover {
+  background: var(--surface-2); border-color: var(--accent); transform: scale(1.05);
+}
+
+.currency-switch-container { position: relative; display: inline-flex; }
+.currency-switch-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 999px;
+  color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.currency-switch-btn:hover { background: var(--surface-2); border-color: var(--accent); }
+.currency-dropdown {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; min-width: 260px; max-height: 380px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px;
+  padding: 6px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 2px;
+  animation: fadeIn .15s ease-out; overflow-y: auto;
+}
+.currency-dropdown-header {
+  padding: 6px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.currency-dropdown-header small { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+.currency-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; padding: 8px 10px; border: 0; background: transparent;
+  color: var(--text); font-size: 13px; font-weight: 500; border-radius: 8px;
+  text-align: left; cursor: pointer; transition: background .15s;
+}
+.currency-option:hover { background: var(--surface-2); }
+.currency-option.active { background: var(--accent-soft); color: var(--accent-hi); font-weight: 600; }
+.currency-rate-chip {
+  font-size: 11px; font-weight: 600; color: var(--muted); background: var(--surface-2);
+  padding: 2px 6px; border-radius: 6px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spinSlow 1s linear infinite;
+}

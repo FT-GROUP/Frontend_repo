@@ -1,7 +1,18 @@
+let activeCurrencyFormatter = null
+let activeCurrencyShortFormatter = null
+
+export function setCurrencyFormatter(fn, shortFn) {
+  activeCurrencyFormatter = fn
+  activeCurrencyShortFormatter = shortFn
+}
+
 const cop = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 })
 
-/** $ 1.200.000  /  -$ 187.500 */
-export function money(value, { sign = false } = {}) {
+/** Formato de moneda con conversión sincronizada en tiempo real */
+export function money(value, { sign = false, showCode = false } = {}) {
+  if (activeCurrencyFormatter) {
+    return activeCurrencyFormatter(value, { sign, showCode })
+  }
   const n = Math.round(Number(value) || 0)
   const abs = `$ ${cop.format(Math.abs(n))}`
   if (n < 0) return `-${abs}`
@@ -11,6 +22,9 @@ export function money(value, { sign = false } = {}) {
 
 /** Versión compacta para tarjetas pequeñas: $1,2M / $850K */
 export function moneyShort(value) {
+  if (activeCurrencyShortFormatter) {
+    return activeCurrencyShortFormatter(value)
+  }
   const n = Math.abs(Math.round(Number(value) || 0))
   const s = n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace('.', ',').replace(',0', '')}M`
     : n >= 1_000 ? `${Math.round(n / 1_000)}K` : String(n)

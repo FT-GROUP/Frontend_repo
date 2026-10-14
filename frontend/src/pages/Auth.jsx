@@ -4,6 +4,8 @@ import { authApi } from '../services/authApi'
 import { Alert } from '../components/ui'
 import Icon from '../components/Icon'
 import BrandMark from '../components/BrandMark'
+import ThemeSwitch from '../components/ThemeSwitch'
+import LanguageSwitch from '../components/LanguageSwitch'
 
 function AuthShell({ title, subtitle, children, footer }) {
   return (
@@ -19,7 +21,13 @@ function AuthShell({ title, subtitle, children, footer }) {
         </ul>
       </section>
       <section className="auth-card">
-        <div className="brand auth-brand-mobile"><BrandMark /><span className="brand-name">FT.<b> GROUP</b></span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div className="brand auth-brand-mobile"><BrandMark /><span className="brand-name">FT.<b> GROUP</b></span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ThemeSwitch compact />
+            <LanguageSwitch compact />
+          </div>
+        </div>
         <h1>{title}</h1>
         <p className="muted">{subtitle}</p>
         {children}

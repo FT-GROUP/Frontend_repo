@@ -350,5 +350,35 @@ const localConAuditoria = new Proxy(local, {
   },
 })
 
-export const financeApi = MODE === 'api' ? remote : localConAuditoria
+function withFallback(remoteFn, localFn) {
+  return async function (user, ...args) {
+    if (MODE === 'local') {
+      return localFn(user, ...args)
+    }
+    try {
+      return await remoteFn(user, ...args)
+    } catch (err) {
+      if (err.status === 0 || err.status === 404 || err.status === 502 || err.status === 503) {
+        return localFn(user, ...args)
+      }
+      throw err
+    }
+  }
+}
+
+export const financeApi = {
+  summary: withFallback(remote.summary, localConAuditoria.summary),
+  groups: withFallback(remote.groups, localConAuditoria.groups),
+  createGroup: withFallback(remote.createGroup, localConAuditoria.createGroup),
+  addMember: withFallback(remote.addMember, localConAuditoria.addMember),
+  history: withFallback(remote.history, localConAuditoria.history),
+  archiveGroup: withFallback(remote.archiveGroup, localConAuditoria.archiveGroup),
+  expenses: withFallback(remote.expenses, localConAuditoria.expenses),
+  createExpense: withFallback(remote.createExpense, localConAuditoria.createExpense),
+  deleteExpense: withFallback(remote.deleteExpense, localConAuditoria.deleteExpense),
+  payShare: withFallback(remote.payShare, localConAuditoria.payShare),
+  settle: withFallback(remote.settle, localConAuditoria.settle),
+  resetDemo: localConAuditoria.resetDemo,
+}
+
 export const financeMode = MODE

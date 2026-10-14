@@ -4,6 +4,10 @@ import Icon from './Icon'
 import { Avatar } from './ui'
 import { firstName } from '../utils/format'
 import BrandMark from './BrandMark'
+import CurrencySwitch from './CurrencySwitch'
+import ThemeSwitch from './ThemeSwitch'
+import LanguageSwitch from './LanguageSwitch'
+import { useI18n } from '../i18n/I18nContext'
 
 const NAV_BASE = [
   { to: '/panel', label: 'Panel de control', short: 'Panel', icon: 'grid' },
@@ -92,7 +96,12 @@ export default function Layout({ user, onLogout, children }) {
           <button className="icon-btn menu-btn" onClick={() => setOpen(true)} aria-label="Abrir menú"><Icon name="menu" size={22} /></button>
           <span className="topbar-brand"><Logo /></span>
           <span className="topbar-text">FT-GROUP · Sistema de gestión financiera colaborativa</span>
-          <span className={`status${online ? '' : ' status-off'}`}><i />{online ? 'En línea' : 'Sin conexión'}</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CurrencySwitch />
+            <ThemeSwitch compact />
+            <LanguageSwitch />
+            <span className={`status${online ? '' : ' status-off'}`}><i />{online ? 'En línea' : 'Sin conexión'}</span>
+          </div>
         </header>
         <main className="content">{children}</main>
       </div>
