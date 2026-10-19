@@ -90,6 +90,7 @@ docker compose up -d
 npm run migrate:dev
 
 # 5) Levantar el servidor en modo desarrollo (recarga automática)
+npm run seed:roles
 npm run dev
 ```
 
@@ -122,6 +123,27 @@ Todos los cuerpos de petición/respuesta son JSON.
 | POST   | `/api/auth/logout`    | Revoca un refresh token                         | No             |
 | GET    | `/api/auth/me`        | Devuelve el perfil del usuario autenticado      | Sí (Bearer)    |
 | GET    | `/health`             | Chequeo de salud del servicio                   | No             |
+
+### Roles de aplicación
+
+La migración `004_roles_usuario.sql` asigna el rol `usuario` por defecto a las cuentas existentes y nuevas. El registro público no permite elegir un rol.
+
+| Método | Ruta | Permiso | Función |
+|---|---|---|---|
+| GET | `/api/administracion/usuarios` | Moderador o supervisor | Lista cuentas sin exponer contraseñas ni hashes. |
+| PATCH | `/api/administracion/usuarios/:id/estado` | Moderador o supervisor | Activa, desactiva o bloquea una cuenta. Un moderador solo gestiona cuentas `usuario`. |
+| PATCH | `/api/administracion/usuarios/:id/rol` | Supervisor | Asigna `usuario`, `moderador` o `supervisor`. |
+
+Los cambios no permiten gestionar la propia cuenta desde administración. La autorización usa el rol actual consultado en PostgreSQL, por lo que cambiar un rol o bloquear una cuenta invalida el permiso de la sesión inmediatamente.
+
+Para crear o restablecer las cuentas de demostración ejecuta `npm run seed:roles` después de las migraciones. Este comando está bloqueado cuando `NODE_ENV=production`:
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Moderador | `moderador@ftgroup.test` | `Moderador2026!` |
+| Supervisor | `supervisor@ftgroup.test` | `Supervisor2026!` |
+
+El comando actualiza únicamente estas dos direcciones de correo de prueba.
 
 ### Servicios financieros y analíticos
 

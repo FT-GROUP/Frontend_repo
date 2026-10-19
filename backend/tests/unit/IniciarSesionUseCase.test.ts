@@ -66,6 +66,12 @@ describe('IniciarSesionUseCaseImpl', () => {
     expect(resultado.accessToken).toBe('access-token-simulado');
     expect(resultado.refreshToken).toBe('refresh-token-simulado');
     expect(resultado.usuario.email).toBe('ana@example.com');
+    expect(resultado.usuario.rol).toBe('usuario');
+    expect(tokenService.generarAccessToken).toHaveBeenCalledWith({
+      usuarioId: 1,
+      email: 'ana@example.com',
+      rol: 'usuario',
+    });
   });
 
   it('rechaza con CredencialesInvalidasError si el usuario no existe', async () => {

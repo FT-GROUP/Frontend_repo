@@ -6,6 +6,7 @@ import authRoutes from './infrastructure/adapters/in/http/routes/authRoutes';
 import grupoRoutes from './infrastructure/adapters/in/http/routes/grupoRoutes';
 import reporteRoutes from './infrastructure/adapters/in/http/routes/reporteRoutes';
 import notificacionRoutes from './infrastructure/adapters/in/http/routes/notificacionRoutes';
+import administracionRoutes from './infrastructure/adapters/in/http/routes/administracionRoutes';
 import { errorHandler, rutaNoEncontrada } from './infrastructure/adapters/in/http/middlewares/errorHandler';
 import { env } from './infrastructure/config/env';
 
@@ -39,6 +40,7 @@ export function crearApp(): Application {
   app.use('/api/grupos', grupoRoutes);
   app.use('/api/reportes', reporteRoutes);
   app.use('/api/notificaciones', notificacionRoutes);
+  app.use('/api/administracion', administracionRoutes);
 
   // --- 404 y manejo centralizado de errores ---
   app.use(rutaNoEncontrada);

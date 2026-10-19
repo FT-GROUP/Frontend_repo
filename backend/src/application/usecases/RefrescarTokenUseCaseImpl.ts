@@ -33,6 +33,9 @@ export class RefrescarTokenUseCaseImpl implements RefrescarTokenUseCase {
     if (!usuario) {
       throw new UsuarioNoEncontradoError(registro.usuarioId);
     }
+    if (!usuario.puedeIniciarSesion()) {
+      throw new TokenInvalidoError('La cuenta no está activa. Inicie sesión nuevamente.');
+    }
 
     // Rotacion: se revoca el refresh token consumido y se emite uno nuevo.
     await this.refreshTokenRepository.revocar(refreshToken);
@@ -40,6 +43,7 @@ export class RefrescarTokenUseCaseImpl implements RefrescarTokenUseCase {
     const nuevoAccessToken = this.tokenService.generarAccessToken({
       usuarioId: usuario.id as number,
       email: usuario.email,
+      rol: usuario.rol,
     });
 
     const nuevoRefreshToken = this.tokenService.generarRefreshTokenString();

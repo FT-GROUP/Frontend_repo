@@ -21,6 +21,7 @@ export class ObtenerPerfilUseCaseImpl implements ObtenerPerfilUseCase {
       email: usuario.email,
       telefono: usuario.telefono,
       estado: usuario.estado,
+      rol: usuario.rol,
       fechaRegistro: usuario.fechaRegistro,
     };
   }

@@ -67,6 +67,7 @@ export default function Profile({ user, setUser, onLogout }) {
             <h2 className="card-title">Cuenta</h2>
             <dl className="dl">
               <dt>Estado</dt><dd><span className={`pill ${user.estado === 'activo' ? 'pill-ok' : ''}`}>{user.estado}</span></dd>
+              <dt>Rol</dt><dd>{user.rol || 'usuario'}</dd>
               {registrado && <><dt>Miembro desde</dt><dd>{registrado}</dd></>}
             </dl>
             <div className="btn-row">

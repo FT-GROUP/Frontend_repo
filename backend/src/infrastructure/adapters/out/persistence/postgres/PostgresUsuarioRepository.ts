@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { Usuario, EstadoUsuario } from '../../../../../domain/entities/Usuario';
+import { Usuario, EstadoUsuario, RolUsuario } from '../../../../../domain/entities/Usuario';
 import { UsuarioRepository } from '../../../../../domain/ports/out/UsuarioRepository';
 
 interface FilaUsuario {
@@ -10,6 +10,7 @@ interface FilaUsuario {
   telefono: string | null;
   fecha_registro: Date;
   estado: EstadoUsuario;
+  rol: RolUsuario;
 }
 
 /**
@@ -33,7 +34,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
     const query = `
       INSERT INTO usuario (nombre, email, password_hash, telefono, estado)
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, nombre, email, password_hash, telefono, fecha_registro, estado
+      RETURNING id, nombre, email, password_hash, telefono, fecha_registro, estado, rol
     `;
     const valores = [usuario.nombre, usuario.email, usuario.passwordHash, usuario.telefono, usuario.estado];
 
@@ -46,7 +47,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
       UPDATE usuario
       SET nombre = $1, telefono = $2, estado = $3
       WHERE id = $4
-      RETURNING id, nombre, email, password_hash, telefono, fecha_registro, estado
+      RETURNING id, nombre, email, password_hash, telefono, fecha_registro, estado, rol
     `;
     const valores = [usuario.nombre, usuario.telefono, usuario.estado, usuario.id];
     const resultado = await this.pool.query<FilaUsuario>(query, valores);
@@ -55,7 +56,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
 
   async buscarPorEmail(email: string): Promise<Usuario | null> {
     const query = `
-      SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado
+      SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado, rol
       FROM usuario
       WHERE email = $1
       LIMIT 1
@@ -67,7 +68,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
 
   async buscarPorId(id: number): Promise<Usuario | null> {
     const query = `
-      SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado
+      SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado, rol
       FROM usuario
       WHERE id = $1
       LIMIT 1
@@ -92,6 +93,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
       telefono: fila.telefono,
       fechaRegistro: new Date(fila.fecha_registro),
       estado: fila.estado,
+      rol: fila.rol,
     });
   }
 }

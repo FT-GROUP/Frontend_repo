@@ -15,6 +15,9 @@ import { ActivarCuentaUseCaseImpl } from '../../application/usecases/ActivarCuen
 import { GrupoGastoService } from '../../application/services/GrupoGastoService';
 import { PostgresGrupoGastoRepository } from '../adapters/out/persistence/postgres/PostgresGrupoGastoRepository';
 import { GrupoGastoController } from '../adapters/in/http/controllers/GrupoGastoController';
+import { PostgresAdministracionRepository } from '../adapters/out/persistence/postgres/PostgresAdministracionRepository';
+import { AdministracionService } from '../../application/services/AdministracionService';
+import { AdministracionController } from '../adapters/in/http/controllers/AdministracionController';
 
 /**
  * "Composition root" / contenedor de dependencias manual.
@@ -59,6 +62,11 @@ const grupoGastoRepository = new PostgresGrupoGastoRepository(pool);
 const grupoGastoService = new GrupoGastoService(grupoGastoRepository);
 export const grupoGastoController = new GrupoGastoController(grupoGastoService);
 
+const administracionRepository = new PostgresAdministracionRepository(pool);
+const administracionService = new AdministracionService(administracionRepository);
+export const administracionController = new AdministracionController(administracionService);
+
 // Exportado para que el middleware de autenticacion pueda verificar
 // access tokens sin duplicar la logica de JWT.
 export const tokenServiceInstancia = tokenService;
+export const usuarioRepositoryInstancia = usuarioRepository;

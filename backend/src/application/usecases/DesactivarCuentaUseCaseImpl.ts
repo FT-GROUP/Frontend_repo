@@ -23,6 +23,7 @@ export class DesactivarCuentaUseCaseImpl implements DesactivarCuentaUseCase {
       email: usuarioActualizado.email,
       telefono: usuarioActualizado.telefono,
       estado: usuarioActualizado.estado,
+      rol: usuarioActualizado.rol,
       fechaRegistro: usuarioActualizado.fechaRegistro,
     };
   }

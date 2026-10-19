@@ -19,6 +19,7 @@ export interface RegistrarUsuarioResultado {
   email: string;
   telefono: string | null;
   estado: string;
+  rol: string;
   fechaRegistro: Date;
 }
 

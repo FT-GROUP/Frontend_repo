@@ -22,6 +22,7 @@ export class ActualizarPerfilUseCaseImpl implements ActualizarPerfilUseCase {
       email: usuarioActualizado.email,
       telefono: usuarioActualizado.telefono,
       estado: usuarioActualizado.estado,
+      rol: usuarioActualizado.rol,
       fechaRegistro: usuarioActualizado.fechaRegistro,
     };
   }

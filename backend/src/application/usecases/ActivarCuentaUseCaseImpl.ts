@@ -18,6 +18,7 @@ export class ActivarCuentaUseCaseImpl implements ActivarCuentaUseCase {
       email: usuarioActualizado.email,
       telefono: usuarioActualizado.telefono,
       estado: usuarioActualizado.estado,
+      rol: usuarioActualizado.rol,
       fechaRegistro: usuarioActualizado.fechaRegistro,
     };
   }

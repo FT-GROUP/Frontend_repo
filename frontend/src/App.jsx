@@ -11,11 +11,13 @@ import History from './pages/History'
 import Analisis from './pages/Analisis'
 import Scan from './pages/Scan'
 import Profile from './pages/Profile'
+import Administracion from './pages/Administracion'
 import BrandMark from './components/BrandMark'
 
-function Protected({ user, onLogout, children }) {
+function Protected({ user, onLogout, children, roles }) {
   const location = useLocation()
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (roles && !roles.includes(user.rol)) return <Navigate to="/panel" replace />
   return <Layout user={user} onLogout={onLogout}>{children}</Layout>
 }
 
@@ -39,12 +41,14 @@ export default function App() {
   if (loading) return <div className="splash"><BrandMark /><span className="spinner" /></div>
 
   const page = el => <Protected user={user} onLogout={logout}>{el}</Protected>
+  const staffPage = el => <Protected user={user} onLogout={logout} roles={['moderador', 'supervisor']}>{el}</Protected>
   const props = { user }
+  const home = user && ['moderador', 'supervisor'].includes(user.rol) ? '/administracion' : '/panel'
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/panel" replace /> : <Login onLogin={setUser} />} />
-      <Route path="/registro" element={user ? <Navigate to="/panel" replace /> : <Register />} />
+      <Route path="/login" element={user ? <Navigate to={home} replace /> : <Login onLogin={setUser} />} />
+      <Route path="/registro" element={user ? <Navigate to={home} replace /> : <Register />} />
       <Route path="/panel" element={page(<Dashboard {...props} />)} />
       <Route path="/grupos" element={page(<Groups {...props} />)} />
       <Route path="/gastos" element={page(<Expenses {...props} />)} />
@@ -53,7 +57,8 @@ export default function App() {
       <Route path="/indicadores" element={<Navigate to="/analisis" replace />} />
       <Route path="/escanear" element={page(<Scan {...props} />)} />
       <Route path="/perfil" element={page(<Profile user={user} setUser={setUser} onLogout={logout} />)} />
-      <Route path="*" element={<Navigate to={user ? '/panel' : '/login'} replace />} />
+      <Route path="/administracion" element={staffPage(<Administracion {...props} />)} />
+      <Route path="*" element={<Navigate to={user ? home : '/login'} replace />} />
     </Routes>
   )
 }

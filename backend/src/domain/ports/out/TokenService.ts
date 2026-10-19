@@ -3,9 +3,12 @@
  * (ver "Uso de tokens JWT para mantener la sesion de los usuarios").
  */
 
+import { RolUsuario } from '../../entities/Usuario';
+
 export interface PayloadTokenAcceso {
   usuarioId: number;
   email: string;
+  rol: RolUsuario;
 }
 
 export interface TokenService {

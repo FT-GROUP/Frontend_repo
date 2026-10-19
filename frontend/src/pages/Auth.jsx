@@ -53,7 +53,8 @@ export function Login({ onLogin }) {
     try {
       const user = await authApi.login(form.email.trim(), form.password)
       onLogin(user)
-      navigate(location.state?.from || '/panel', { replace: true })
+      const home = ['moderador', 'supervisor'].includes(user.rol) ? '/administracion' : '/panel'
+      navigate(location.state?.from || home, { replace: true })
     } catch (err) { setError(err.message) } finally { setSending(false) }
   }
 

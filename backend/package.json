@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "migrate": "node dist/infrastructure/config/runMigrations.js",
     "migrate:dev": "ts-node src/infrastructure/config/runMigrations.ts",
+    "seed:roles": "node scripts/seed-roles.js",
     "test": "jest --runInBand",
     "lint": "tsc --noEmit"
   },

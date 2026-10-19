@@ -2,6 +2,9 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { PayloadTokenAcceso, TokenService } from '../../../../domain/ports/out/TokenService';
 import { TokenInvalidoError } from '../../../../domain/errors/DomainErrors';
+import { RolUsuario } from '../../../../domain/entities/Usuario';
+
+const ROLES_VALIDOS: RolUsuario[] = ['usuario', 'moderador', 'supervisor'];
 
 /**
  * Adaptador de salida: implementa el puerto TokenService usando la
@@ -22,9 +25,14 @@ export class JwtTokenService implements TokenService {
   verificarAccessToken(token: string): PayloadTokenAcceso {
     try {
       const decodificado = jwt.verify(token, this.secreto) as jwt.JwtPayload;
+      const rol = decodificado.rol === undefined ? 'usuario' : decodificado.rol;
+      if (!ROLES_VALIDOS.includes(rol)) {
+        throw new TokenInvalidoError('El rol del token no es válido.');
+      }
       return {
         usuarioId: decodificado.usuarioId,
         email: decodificado.email,
+        rol,
       };
     } catch (error) {
       throw new TokenInvalidoError('El access token es invalido o ha expirado.');

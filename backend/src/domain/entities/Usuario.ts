@@ -9,6 +9,7 @@
  */
 
 export type EstadoUsuario = 'activo' | 'inactivo' | 'bloqueado';
+export type RolUsuario = 'usuario' | 'moderador' | 'supervisor';
 
 export interface UsuarioProps {
   id?: number;
@@ -18,6 +19,7 @@ export interface UsuarioProps {
   telefono?: string | null;
   fechaRegistro?: Date;
   estado?: EstadoUsuario;
+  rol?: RolUsuario;
 }
 
 export class Usuario {
@@ -28,6 +30,7 @@ export class Usuario {
   telefono: string | null;
   readonly fechaRegistro: Date;
   estado: EstadoUsuario;
+  rol: RolUsuario;
 
   private constructor(props: UsuarioProps) {
     this.id = props.id;
@@ -37,6 +40,7 @@ export class Usuario {
     this.telefono = props.telefono ?? null;
     this.fechaRegistro = props.fechaRegistro ?? new Date();
     this.estado = props.estado ?? 'activo';
+    this.rol = props.rol ?? 'usuario';
   }
 
   /**
@@ -124,6 +128,7 @@ actualizarPerfil(datos: { nombre?: string; telefono?: string | null }): void {
       email: this.email,
       telefono: this.telefono,
       estado: this.estado,
+      rol: this.rol,
       fechaRegistro: this.fechaRegistro,
     };
   }

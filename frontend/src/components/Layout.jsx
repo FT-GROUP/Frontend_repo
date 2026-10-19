@@ -5,7 +5,7 @@ import { Avatar } from './ui'
 import { firstName } from '../utils/format'
 import BrandMark from './BrandMark'
 
-export const NAV = [
+const NAV_BASE = [
   { to: '/panel', label: 'Panel de control', short: 'Panel', icon: 'grid' },
   { to: '/grupos', label: 'Grupos financieros', short: 'Grupos', icon: 'layers' },
   { to: '/gastos', label: 'Registro de gastos', short: 'Gastos', icon: 'receipt' },
@@ -13,6 +13,8 @@ export const NAV = [
   { to: '/analisis', label: 'Análisis y predicciones', short: 'Análisis', icon: 'trend' },
   { to: '/escanear', label: 'Escanear', short: 'Escanear', icon: 'scan', badge: 'IA' },
 ]
+
+export const NAV = NAV_BASE
 
 function Logo() {
   return (
@@ -37,6 +39,9 @@ export default function Layout({ user, onLogout, children }) {
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const online = useOnline()
+  const navigation = ['moderador', 'supervisor'].includes(user?.rol)
+    ? [...NAV_BASE, { to: '/administracion', label: 'Administración', short: 'Admin', icon: 'shield' }]
+    : NAV_BASE
 
   useEffect(() => { setOpen(false); window.scrollTo(0, 0) }, [location.pathname])
   useEffect(() => {
@@ -52,7 +57,7 @@ export default function Layout({ user, onLogout, children }) {
           <button className="icon-btn sidebar-close" onClick={() => setOpen(false)} aria-label="Cerrar menú"><Icon name="close" /></button>
         </div>
         <nav className="nav">
-          {NAV.map(item => (
+          {navigation.map(item => (
             <NavLink key={item.to} to={item.to} className="nav-link">
               <Icon name={item.icon} size={18} />
               <span>{item.label}</span>
@@ -65,7 +70,7 @@ export default function Layout({ user, onLogout, children }) {
             <Avatar user={user} size={36} />
             <span>
               <strong>{firstName(user.nombre)}</strong>
-              <small>Mi perfil</small>
+              <small>{user.rol ? `${user.rol[0].toUpperCase() + user.rol.slice(1)} · Mi perfil` : 'Mi perfil'}</small>
             </span>
           </NavLink>
           <button className="nav-link nav-logout" onClick={onLogout}>
@@ -86,7 +91,7 @@ export default function Layout({ user, onLogout, children }) {
       </div>
 
       <nav className="tabbar" aria-label="Navegación rápida">
-        {NAV.map(item => (
+        {navigation.map(item => (
           <NavLink key={item.to} to={item.to} className="tab">
             <Icon name={item.icon} size={20} />
             <span>{item.short}</span>

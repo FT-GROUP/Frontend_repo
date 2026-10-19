@@ -61,6 +61,7 @@ export class RegistrarUsuarioUseCaseImpl implements RegistrarUsuarioUseCase {
       email: usuario.email,
       telefono: usuario.telefono,
       estado: usuario.estado,
+      rol: usuario.rol,
       fechaRegistro: usuario.fechaRegistro,
     };
   }

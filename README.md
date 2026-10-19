@@ -27,24 +27,36 @@ Abre **dos terminales**, una para cada parte.
 **Terminal 1: backend** (http://localhost:3000)
 
 ```bash
-cd backend
-cp .env.example .env          # en Windows: copy .env.example .env
+cd .\backend
+Copy-Item .env.example .env
 npm install
-docker compose up -d          # solo si usas Docker
+docker compose up -d
 npm run migrate:dev
+npm run seed:roles             # crea los usuarios de prueba moderador y supervisor
 npm run dev
 ```
 
 **Terminal 2: frontend** (http://localhost:5173)
 
 ```bash
-cd frontend
-cp .env.example .env          # en Windows: copy .env.example .env
+cd .\frontend
+Copy-Item .env.example .env
 npm install
 npm run dev
 ```
 
 En `frontend/.env`, `VITE_FINANCE_MODE=local` guarda grupos y gastos en el navegador con datos de demostración; el inicio de sesión siempre usa el backend. `VITE_FINANCE_MODE=api` usa el backend para todo.
+
+Con ambos procesos activos, abre http://localhost:5173 e inicia sesión con una de estas cuentas de desarrollo:
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Moderador | `moderador@ftgroup.test` | `Moderador2026!` |
+| Supervisor | `supervisor@ftgroup.test` | `Supervisor2026!` |
+
+Ambos roles acceden a **Administración** desde su menú. El moderador puede consultar usuarios y gestionar el estado de cuentas estándar; el supervisor también puede asignar roles. Las cuentas de prueba solo deben usarse localmente.
+
+El diseño de una futura interfaz de auditoría se propone, pero no se implementa en este cambio: un registro cronológico e inmutable de acciones, con filtros por usuario, actor, tipo de acción y fechas, detalle antes/después y exportación controlada.
 
 ## Pruebas
 

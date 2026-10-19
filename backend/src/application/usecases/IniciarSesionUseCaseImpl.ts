@@ -49,6 +49,7 @@ export class IniciarSesionUseCaseImpl implements IniciarSesionUseCase {
     const accessToken = this.tokenService.generarAccessToken({
       usuarioId: usuario.id as number,
       email: usuario.email,
+      rol: usuario.rol,
     });
 
     const refreshTokenString = this.tokenService.generarRefreshTokenString();
@@ -72,6 +73,7 @@ export class IniciarSesionUseCaseImpl implements IniciarSesionUseCase {
         email: usuario.email,
         telefono: usuario.telefono,
         estado: usuario.estado,
+        rol: usuario.rol,
         fechaRegistro: usuario.fechaRegistro,
       },
     };
