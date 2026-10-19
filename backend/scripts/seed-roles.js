@@ -35,6 +35,12 @@ const usuarios = [
     password: 'Supervisor2026!',
     rol: 'supervisor',
   },
+  {
+    nombre: 'Usuario común de prueba',
+    email: 'usuario@ftgroup.test',
+    password: 'Usuario2026!',
+    rol: 'usuario',
+  },
 ]
 
 async function crearUsuariosDePrueba() {
@@ -53,7 +59,7 @@ async function crearUsuariosDePrueba() {
       )
       console.log(`Cuenta ${usuario.rol} lista: ${usuario.email}`)
     }
-    console.log('Contraseñas de desarrollo: Moderador2026! y Supervisor2026!')
+    console.log('Contraseñas de desarrollo: Moderador2026!, Supervisor2026! y Usuario2026!')
   } finally {
     await pool.end()
   }

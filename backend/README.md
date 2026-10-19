@@ -142,6 +142,7 @@ Para crear o restablecer las cuentas de demostración ejecuta `npm run seed:role
 |---|---|---|
 | Moderador | `moderador@ftgroup.test` | `Moderador2026!` |
 | Supervisor | `supervisor@ftgroup.test` | `Supervisor2026!` |
+| Usuario común | `usuario@ftgroup.test` | `Usuario2026!` |
 
 El comando actualiza únicamente estas dos direcciones de correo de prueba.
 
