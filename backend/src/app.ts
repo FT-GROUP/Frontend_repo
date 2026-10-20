@@ -7,6 +7,8 @@ import grupoRoutes from './infrastructure/adapters/in/http/routes/grupoRoutes';
 import reporteRoutes from './infrastructure/adapters/in/http/routes/reporteRoutes';
 import notificacionRoutes from './infrastructure/adapters/in/http/routes/notificacionRoutes';
 import administracionRoutes from './infrastructure/adapters/in/http/routes/administracionRoutes';
+import auditoriaRoutes from './infrastructure/adapters/in/http/routes/auditoriaRoutes';
+import { auditarActividad } from './infrastructure/adapters/in/http/middlewares/authMiddleware';
 import { errorHandler, rutaNoEncontrada } from './infrastructure/adapters/in/http/middlewares/errorHandler';
 import { env } from './infrastructure/config/env';
 
@@ -29,6 +31,7 @@ export function crearApp(): Application {
 
   // --- Parseo de JSON (con limite para mitigar payloads abusivos) ---
   app.use(express.json({ limit: '100kb' }));
+  app.use(auditarActividad);
 
   // --- Chequeo de salud ---
   app.get('/health', (_req, res) => {
@@ -41,6 +44,7 @@ export function crearApp(): Application {
   app.use('/api/reportes', reporteRoutes);
   app.use('/api/notificaciones', notificacionRoutes);
   app.use('/api/administracion', administracionRoutes);
+  app.use('/api/auditoria', auditoriaRoutes);
 
   // --- 404 y manejo centralizado de errores ---
   app.use(rutaNoEncontrada);

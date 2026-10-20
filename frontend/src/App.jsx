@@ -12,6 +12,7 @@ import Analisis from './pages/Analisis'
 import Scan from './pages/Scan'
 import Profile from './pages/Profile'
 import Administracion from './pages/Administracion'
+import Auditoria from './pages/Auditoria'
 import BrandMark from './components/BrandMark'
 
 function Protected({ user, onLogout, children, roles }) {
@@ -42,6 +43,7 @@ export default function App() {
 
   const page = el => <Protected user={user} onLogout={logout}>{el}</Protected>
   const staffPage = el => <Protected user={user} onLogout={logout} roles={['moderador', 'supervisor']}>{el}</Protected>
+  const supervisorPage = el => <Protected user={user} onLogout={logout} roles={['supervisor']}>{el}</Protected>
   const props = { user }
   const home = user && ['moderador', 'supervisor'].includes(user.rol) ? '/administracion' : '/panel'
 
@@ -58,6 +60,7 @@ export default function App() {
       <Route path="/escanear" element={page(<Scan {...props} />)} />
       <Route path="/perfil" element={page(<Profile user={user} setUser={setUser} onLogout={logout} />)} />
       <Route path="/administracion" element={staffPage(<Administracion {...props} />)} />
+      <Route path="/auditoria" element={supervisorPage(<Auditoria />)} />
       <Route path="*" element={<Navigate to={user ? home : '/login'} replace />} />
     </Routes>
   )

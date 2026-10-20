@@ -1,10 +1,67 @@
 import { NextFunction, Request, Response } from 'express';
-import { tokenServiceInstancia, usuarioRepositoryInstancia } from '../../../../config/container';
+import { randomUUID } from 'crypto';
+import {
+  auditoriaService,
+  refreshTokenRepositoryInstancia,
+  tokenServiceInstancia,
+  usuarioRepositoryInstancia,
+} from '../../../../config/container';
 import { RolUsuario } from '../../../../../domain/entities/Usuario';
 import { PayloadTokenAcceso } from '../../../../../domain/ports/out/TokenService';
 
 export interface RequestAutenticado extends Request {
   usuario?: { id: number; email: string; rol: RolUsuario };
+}
+
+export function auditarActividad(req: RequestAutenticado, res: Response, next: NextFunction): void {
+  const rutaOriginal = req.path;
+  if (!rutaOriginal.startsWith('/api/')) {
+    next();
+    return;
+  }
+
+  res.on('finish', () => {
+    if (rutaOriginal === '/api/auditoria/eventos') return;
+
+    void (async () => {
+      let usuario = req.usuario;
+      if (
+        !usuario &&
+        res.statusCode < 400 &&
+        ['/api/auth/logout', '/api/auth/refresh'].includes(rutaOriginal) &&
+        typeof req.body?.refreshToken === 'string'
+      ) {
+        const sesion = await refreshTokenRepositoryInstancia.buscarPorToken(req.body.refreshToken);
+        if (sesion) {
+          const cuenta = await usuarioRepositoryInstancia.buscarPorId(sesion.usuarioId);
+          if (cuenta) {
+            usuario = {
+              id: cuenta.id as number,
+              email: cuenta.email,
+              rol: cuenta.rol,
+            };
+          }
+        }
+      }
+      if (!usuario) return;
+
+      const ruta = `${req.baseUrl}${req.route?.path ?? req.path}`.slice(0, 255);
+      const solicitudId = req.get('x-request-id');
+      await auditoriaService.registrar({
+        actorId: usuario.id,
+        actorEmail: usuario.email,
+        actorRol: usuario.rol,
+        accion: `${req.method} ${ruta}`,
+        metodo: req.method,
+        ruta,
+        estadoHttp: res.statusCode,
+        solicitudId: solicitudId && solicitudId.length <= 80 ? solicitudId : randomUUID(),
+      });
+    })().catch((error: unknown) => {
+      console.error('No fue posible guardar la actividad de auditoría:', error);
+    });
+  });
+  next();
 }
 
 /**

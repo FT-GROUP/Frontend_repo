@@ -57,7 +57,7 @@ Con ambos procesos activos, abre http://localhost:5173 e inicia sesión con una 
 
 Los roles moderador y supervisor acceden a **Administración** desde su menú. El moderador puede consultar usuarios y gestionar el estado de cuentas estándar; el supervisor también puede asignar roles. El usuario común conserva la interfaz financiera normal y no ve la sección administrativa. Las cuentas de prueba solo deben usarse localmente.
 
-El diseño de una futura interfaz de auditoría se propone, pero no se implementa en este cambio: un registro cronológico e inmutable de acciones, con filtros por usuario, actor, tipo de acción y fechas, detalle antes/después y exportación controlada.
+La opción **Auditoría** aparece en el menú del supervisor. Registra solicitudes autenticadas del backend y acciones de escritura de la demostración local; la pantalla permite filtrar por fechas, rol, método y texto. No se almacenan contraseñas, tokens ni cuerpos de formularios. La demostración local etiqueta sus eventos como `LOCAL`.
 
 ## Pruebas
 

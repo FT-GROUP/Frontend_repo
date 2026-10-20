@@ -144,7 +144,18 @@ Para crear o restablecer las cuentas de demostración ejecuta `npm run seed:role
 | Supervisor | `supervisor@ftgroup.test` | `Supervisor2026!` |
 | Usuario común | `usuario@ftgroup.test` | `Usuario2026!` |
 
-El comando actualiza únicamente estas dos direcciones de correo de prueba.
+El comando actualiza únicamente las tres direcciones de correo de prueba.
+
+### Auditoría
+
+La migración `005_auditoria.sql` crea una bitácora cronológica de actividad. Las solicitudes autenticadas a la API quedan registradas con actor, rol vigente, método, ruta, código HTTP y fecha. También se registran los registros de cuenta, inicios y cierres de sesión, renovaciones de token y las acciones financieras principales del modo local de demostración.
+
+| Método | Ruta | Permiso | Función |
+|---|---|---|---|
+| GET | `/api/auditoria` | Supervisor | Consulta la bitácora con filtros por fechas, rol, método y texto; paginación de hasta 100 filas. |
+| POST | `/api/auditoria/eventos` | Cualquier usuario autenticado | Registra una acción permitida de la demostración local bajo la identidad derivada del token. |
+
+No se guardan contraseñas, tokens ni cuerpos de solicitud. La interfaz no ofrece acciones para editar o eliminar eventos. Las acciones enviadas desde la demostración local se distinguen con método `LOCAL`; son eventos declarados por el cliente, mientras que las solicitudes de API se registran en el backend.
 
 ### Servicios financieros y analíticos
 

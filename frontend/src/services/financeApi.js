@@ -9,6 +9,7 @@
 import { request } from './http'
 import { splitEqual, pendingDebts, netBalances, pairwise } from '../utils/balances'
 import { today } from '../utils/format'
+import { auditoriaApi } from './auditoriaApi'
 
 const MODE = import.meta.env.VITE_FINANCE_MODE || 'api'
 const delay = (ms = 150) => new Promise(r => setTimeout(r, ms))
@@ -315,5 +316,39 @@ const remote = {
   resetDemo: async () => {},
 }
 
-export const financeApi = MODE === 'api' ? remote : local
+const ACCIONES_AUDITADAS = {
+  summary: 'panel_consultar',
+  groups: 'grupos_consultar',
+  history: 'historial_consultar',
+  expenses: 'gastos_consultar',
+  createGroup: 'grupo_crear',
+  addMember: 'miembro_agregar',
+  archiveGroup: 'grupo_archivar',
+  createExpense: 'gasto_crear',
+  deleteExpense: 'gasto_eliminar',
+  payShare: 'pago_registrar',
+  settle: 'liquidacion_registrar',
+}
+
+const localConAuditoria = new Proxy(local, {
+  get(target, propiedad, receiver) {
+    const metodo = Reflect.get(target, propiedad, receiver)
+    if (typeof metodo !== 'function') return metodo
+
+    return async (...argumentos) => {
+      const resultado = await metodo.apply(target, argumentos)
+      const accion = propiedad === 'resetDemo'
+        ? (argumentos[1]?.empty ? 'datos_demo_borrar' : 'datos_demo_restaurar')
+        : ACCIONES_AUDITADAS[propiedad]
+      if (accion) {
+        auditoriaApi.record(accion).catch(error => {
+          console.error('No fue posible sincronizar la actividad local con la auditoría:', error)
+        })
+      }
+      return resultado
+    }
+  },
+})
+
+export const financeApi = MODE === 'api' ? remote : localConAuditoria
 export const financeMode = MODE

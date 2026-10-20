@@ -40,7 +40,11 @@ export default function Layout({ user, onLogout, children }) {
   const location = useLocation()
   const online = useOnline()
   const navigation = ['moderador', 'supervisor'].includes(user?.rol)
-    ? [...NAV_BASE, { to: '/administracion', label: 'Administración', short: 'Admin', icon: 'shield' }]
+    ? [
+        ...NAV_BASE,
+        { to: '/administracion', label: 'Administración', short: 'Admin', icon: 'shield' },
+        ...(user.rol === 'supervisor' ? [{ to: '/auditoria', label: 'Auditoría', short: 'Auditoría', icon: 'file' }] : []),
+      ]
     : NAV_BASE
 
   useEffect(() => { setOpen(false); window.scrollTo(0, 0) }, [location.pathname])

@@ -18,6 +18,9 @@ import { GrupoGastoController } from '../adapters/in/http/controllers/GrupoGasto
 import { PostgresAdministracionRepository } from '../adapters/out/persistence/postgres/PostgresAdministracionRepository';
 import { AdministracionService } from '../../application/services/AdministracionService';
 import { AdministracionController } from '../adapters/in/http/controllers/AdministracionController';
+import { PostgresAuditoriaRepository } from '../adapters/out/persistence/postgres/PostgresAuditoriaRepository';
+import { AuditoriaService } from '../../application/services/AuditoriaService';
+import { AuditoriaController } from '../adapters/in/http/controllers/AuditoriaController';
 
 /**
  * "Composition root" / contenedor de dependencias manual.
@@ -66,7 +69,12 @@ const administracionRepository = new PostgresAdministracionRepository(pool);
 const administracionService = new AdministracionService(administracionRepository);
 export const administracionController = new AdministracionController(administracionService);
 
+const auditoriaRepository = new PostgresAuditoriaRepository(pool);
+export const auditoriaService = new AuditoriaService(auditoriaRepository);
+export const auditoriaController = new AuditoriaController(auditoriaService);
+
 // Exportado para que el middleware de autenticacion pueda verificar
 // access tokens sin duplicar la logica de JWT.
 export const tokenServiceInstancia = tokenService;
 export const usuarioRepositoryInstancia = usuarioRepository;
+export const refreshTokenRepositoryInstancia = refreshTokenRepository;

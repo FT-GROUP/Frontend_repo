@@ -15,8 +15,11 @@ Frontend web (React + Vite) de FT. GROUP, basado en los prototipos de las versio
 | `/escanear` | Escaneo de recibos: carga/arrastre o cámara del celular, OCR con Tesseract.js y formulario prellenado | **Backend real** |
 | `/perfil` | Ver/editar nombre y teléfono, desactivar cuenta, cerrar sesión | **Backend real** |
 | `/administracion` | Gestión de cuentas: consulta de usuarios y acciones permitidas por rol | **Backend real** |
+| `/auditoria` | Bitácora paginada y filtrable de actividad | **Solo supervisor** |
 
 La ruta de administración solo está disponible para `moderador` y `supervisor`. El moderador puede cambiar estado a cuentas con rol `usuario`; el supervisor puede cambiar estados y asignar roles. El backend vuelve a comprobar el rol y el estado actual de la cuenta en cada petición protegida.
+
+La auditoría está disponible únicamente para supervisores. Registra solicitudes autenticadas del backend y las acciones de escritura de la demostración local. No almacena contraseñas, tokens ni datos de formularios.
 
 Todo se guarda en PostgreSQL a través del backend. Para crear un grupo, los integrantes deben tener una cuenta registrada; se agregan por su correo.
 
@@ -59,6 +62,7 @@ src/
 │   ├── http.js             cliente fetch + renovación automática del token (401 -> /auth/refresh)
 │   ├── authApi.js          módulo de usuarios (backend real)
 │   ├── adminApi.js         consulta y gestión administrativa de usuarios
+│   ├── auditoriaApi.js     consulta de la bitácora y sincronización de acciones locales
 │   ├── financeApi.js       grupos, gastos, balances, historial (API o modo local)
 │   └── ocr.js              preprocesamiento, OCR y extracción de campos del recibo
 ├── utils/balances.js       motor de cálculo: división igual, saldos netos, balance por pares

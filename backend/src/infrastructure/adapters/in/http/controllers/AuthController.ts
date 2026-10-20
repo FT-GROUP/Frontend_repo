@@ -8,14 +8,36 @@ import {
   actualizarPerfilUseCase,
   desactivarCuentaUseCase,
   activarCuentaUseCase,
+  auditoriaService,
 } from '../../../../config/container';
 import { RequestAutenticado } from '../middlewares/authMiddleware';
+import { RolUsuario } from '../../../../../domain/entities/Usuario';
 import {
   RegistrarUsuarioInput,
   IniciarSesionInput,
   RefrescarTokenInput,
   ActualizarPerfilInput,
 } from '../validators/authValidators';
+
+function registrarEventoAcceso(
+  usuario: { id: number; email: string; rol: RolUsuario },
+  accion: string,
+  ruta: string,
+  solicitudId?: string,
+): void {
+  void auditoriaService.registrar({
+    actorId: usuario.id,
+    actorEmail: usuario.email,
+    actorRol: usuario.rol,
+    accion,
+    metodo: 'POST',
+    ruta,
+    estadoHttp: accion === 'REGISTRO' ? 201 : 200,
+    solicitudId: solicitudId ?? null,
+  }).catch((error: unknown) => {
+    console.error('No fue posible guardar el evento de autenticación en auditoría:', error);
+  });
+}
 
 /**
  * Adaptador de entrada (controlador HTTP / API REST).
@@ -32,6 +54,7 @@ export class AuthController {
   ) {
     try {
       const resultado = await registrarUsuarioUseCase.ejecutar(req.body);
+      registrarEventoAcceso(resultado, 'REGISTRO', '/api/auth/registro', req.get('x-request-id'));
       res.status(201).json({
         mensaje: 'Usuario registrado exitosamente.',
         usuario: resultado,
@@ -48,6 +71,7 @@ export class AuthController {
   ) {
     try {
       const resultado = await iniciarSesionUseCase.ejecutar(req.body);
+      registrarEventoAcceso(resultado.usuario, 'INICIO_SESION', '/api/auth/login', req.get('x-request-id'));
       res.status(200).json(resultado);
     } catch (error) {
       next(error);
