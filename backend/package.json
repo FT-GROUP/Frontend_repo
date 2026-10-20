@@ -13,6 +13,10 @@
     "migrate": "node dist/infrastructure/config/runMigrations.js",
     "migrate:dev": "ts-node src/infrastructure/config/runMigrations.ts",
     "seed:roles": "node scripts/seed-roles.js",
+    "micro:auth": "ts-node-dev --respawn --transpile-only src/microservices/authServer.ts",
+    "micro:expenses": "ts-node-dev --respawn --transpile-only src/microservices/expensesServer.ts",
+    "micro:reports": "ts-node-dev --respawn --transpile-only src/microservices/reportsServer.ts",
+    "micro:notifications": "ts-node-dev --respawn --transpile-only src/microservices/notificationsServer.ts",
     "test": "jest --runInBand",
     "lint": "tsc --noEmit"
   },
