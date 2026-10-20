@@ -34,8 +34,12 @@ function registrarEventoAcceso(
     ruta,
     estadoHttp: accion === 'REGISTRO' ? 201 : 200,
     solicitudId: solicitudId ?? null,
-  }).catch((error: unknown) => {
-    console.error('No fue posible guardar el evento de autenticación en auditoría:', error);
+  }).catch(() => {
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      type: 'authentication_audit_write_failed',
+    }));
   });
 }
 
@@ -54,7 +58,7 @@ export class AuthController {
   ) {
     try {
       const resultado = await registrarUsuarioUseCase.ejecutar(req.body);
-      registrarEventoAcceso(resultado, 'REGISTRO', '/api/auth/registro', req.get('x-request-id'));
+      registrarEventoAcceso(resultado, 'REGISTRO', '/api/auth/registro', res.locals.requestId);
       res.status(201).json({
         mensaje: 'Usuario registrado exitosamente.',
         usuario: resultado,
@@ -71,7 +75,7 @@ export class AuthController {
   ) {
     try {
       const resultado = await iniciarSesionUseCase.ejecutar(req.body);
-      registrarEventoAcceso(resultado.usuario, 'INICIO_SESION', '/api/auth/login', req.get('x-request-id'));
+      registrarEventoAcceso(resultado.usuario, 'INICIO_SESION', '/api/auth/login', res.locals.requestId);
       res.status(200).json(resultado);
     } catch (error) {
       next(error);

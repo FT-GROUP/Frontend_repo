@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "FT. GROUP - Backend (Arquitectura Hexagonal) - Modulo de Usuarios / Autenticacion",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc -p tsconfig.json",
@@ -13,11 +16,17 @@
     "test": "jest --runInBand",
     "lint": "tsc --noEmit"
   },
-  "keywords": ["hexagonal-architecture", "ports-and-adapters", "express", "typescript"],
+  "keywords": [
+    "hexagonal-architecture",
+    "ports-and-adapters",
+    "express",
+    "typescript"
+  ],
   "author": "FT. GROUP - Grupo 2 - Universidad de San Buenaventura",
   "license": "MIT",
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "argon2": "^0.45.1",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -28,7 +37,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",

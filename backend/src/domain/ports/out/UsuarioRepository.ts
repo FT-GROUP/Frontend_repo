@@ -7,6 +7,7 @@ import { Usuario } from '../../entities/Usuario';
  */
 export interface UsuarioRepository {
   guardar(usuario: Usuario): Promise<Usuario>;
+  actualizarPasswordHash(usuarioId: number, passwordHash: string): Promise<void>;
   buscarPorEmail(email: string): Promise<Usuario | null>;
   buscarPorId(id: number): Promise<Usuario | null>;
   existeEmail(email: string): Promise<boolean>;

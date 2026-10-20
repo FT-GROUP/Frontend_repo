@@ -46,7 +46,7 @@ export function auditarActividad(req: RequestAutenticado, res: Response, next: N
       if (!usuario) return;
 
       const ruta = `${req.baseUrl}${req.route?.path ?? req.path}`.slice(0, 255);
-      const solicitudId = req.get('x-request-id');
+      const solicitudId = res.locals.requestId;
       await auditoriaService.registrar({
         actorId: usuario.id,
         actorEmail: usuario.email,
@@ -55,10 +55,14 @@ export function auditarActividad(req: RequestAutenticado, res: Response, next: N
         metodo: req.method,
         ruta,
         estadoHttp: res.statusCode,
-        solicitudId: solicitudId && solicitudId.length <= 80 ? solicitudId : randomUUID(),
+        solicitudId: typeof solicitudId === 'string' ? solicitudId : randomUUID(),
       });
-    })().catch((error: unknown) => {
-      console.error('No fue posible guardar la actividad de auditoría:', error);
+    })().catch(() => {
+      console.error(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'error',
+        type: 'activity_audit_write_failed',
+      }));
     });
   });
   next();

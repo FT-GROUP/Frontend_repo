@@ -38,7 +38,13 @@ async function ejecutarMigraciones(): Promise<void> {
   }
 }
 
-ejecutarMigraciones().catch((error) => {
-  console.error('Error ejecutando migraciones:', error);
+ejecutarMigraciones().catch((error: unknown) => {
+  const code = error instanceof Error && 'code' in error ? error.code : undefined;
+  console.error(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'error',
+    type: 'database_migration_failed',
+    code,
+  }));
   process.exit(1);
 });

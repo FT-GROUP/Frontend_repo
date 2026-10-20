@@ -1,7 +1,7 @@
 import { pool } from '../adapters/out/persistence/postgres/db';
 import { PostgresUsuarioRepository } from '../adapters/out/persistence/postgres/PostgresUsuarioRepository';
 import { PostgresRefreshTokenRepository } from '../adapters/out/persistence/postgres/PostgresRefreshTokenRepository';
-import { BcryptPasswordHasher } from '../adapters/out/security/BcryptPasswordHasher';
+import { Argon2PasswordHasher } from '../adapters/out/security/Argon2PasswordHasher';
 import { JwtTokenService } from '../adapters/out/security/JwtTokenService';
 import { RegistrarUsuarioUseCaseImpl } from '../../application/usecases/RegistrarUsuarioUseCaseImpl';
 import { IniciarSesionUseCaseImpl } from '../../application/usecases/IniciarSesionUseCaseImpl';
@@ -26,16 +26,15 @@ import { AuditoriaController } from '../adapters/in/http/controllers/AuditoriaCo
  * "Composition root" / contenedor de dependencias manual.
  *
  * Aqui, y SOLO aqui, se conectan los puertos con sus adaptadores
- * concretos (Postgres, Bcrypt, JWT). Si mañana se quisiera cambiar
- * Postgres por MongoDB, o Bcrypt por Argon2, este es el unico archivo
- * que tendria que cambiar la forma en que se "conectan los cables";
+ * concretos (Postgres, Argon2id, JWT). Este es el unico archivo que
+ * conecta los adaptadores concretos con los casos de uso.
  * el dominio y la capa de aplicacion no se tocan.
  */
 
 // --- Adaptadores de salida (infraestructura) ---
 const usuarioRepository = new PostgresUsuarioRepository(pool);
 const refreshTokenRepository = new PostgresRefreshTokenRepository(pool);
-const passwordHasher = new BcryptPasswordHasher();
+const passwordHasher = new Argon2PasswordHasher();
 const tokenService = new JwtTokenService(env.jwtSecret, env.jwtExpiracion);
 
 // --- Casos de uso (capa de aplicacion) ---

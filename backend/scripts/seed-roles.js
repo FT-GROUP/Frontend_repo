@@ -1,7 +1,7 @@
 const path = require('path')
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
 
-const bcrypt = require('bcrypt')
+const argon2 = require('argon2')
 const { Pool } = require('pg')
 
 if (process.env.NODE_ENV === 'production') {
@@ -11,7 +11,7 @@ if (process.env.NODE_ENV === 'production') {
 const pool = process.env.DATABASE_URL
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
     })
   : new Pool({
       host: process.env.DB_HOST || 'localhost',
@@ -19,7 +19,7 @@ const pool = process.env.DATABASE_URL
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'ft_group',
-      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
     })
 
 const usuarios = [
@@ -46,7 +46,12 @@ const usuarios = [
 async function crearUsuariosDePrueba() {
   try {
     for (const usuario of usuarios) {
-      const passwordHash = await bcrypt.hash(usuario.password, 12)
+      const passwordHash = await argon2.hash(usuario.password, {
+        type: argon2.argon2id,
+        memoryCost: 19456,
+        timeCost: 2,
+        parallelism: 1,
+      })
       await pool.query(
         `INSERT INTO usuario (nombre, email, password_hash, estado, rol)
          VALUES ($1, $2, $3, 'activo', $4)
@@ -59,13 +64,19 @@ async function crearUsuariosDePrueba() {
       )
       console.log(`Cuenta ${usuario.rol} lista: ${usuario.email}`)
     }
-    console.log('Contraseñas de desarrollo: Moderador2026!, Supervisor2026! y Usuario2026!')
+    console.log('Las cuentas de prueba quedaron listas.')
   } finally {
     await pool.end()
   }
 }
 
 crearUsuariosDePrueba().catch((error) => {
-  console.error('No fue posible crear las cuentas de prueba:', error)
+  const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
+  console.error(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'error',
+    type: 'demo_seed_failed',
+    code,
+  }))
   process.exitCode = 1
 })

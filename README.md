@@ -15,7 +15,7 @@ Cada carpeta se instala y se ejecuta por separado (`npm install` dentro de cada 
 
 ## Requisitos
 
-- [Node.js](https://nodejs.org) 20 o superior y [Git](https://git-scm.com).
+- [Node.js](https://nodejs.org) 22 o superior para el backend y [Git](https://git-scm.com).
 - PostgreSQL 16, de una de estas dos formas:
   - **Docker Desktop:** `docker compose up -d` dentro de `backend/` levanta la base de datos ya creada.
   - **PostgreSQL instalado** (por ejemplo, junto con pgAdmin): crea una base de datos llamada `ft_group` y pon tu contraseña en `DB_PASSWORD` del `backend/.env`.
@@ -57,7 +57,15 @@ Con ambos procesos activos, abre http://localhost:5173 e inicia sesión con una 
 
 Los roles moderador y supervisor acceden a **Administración** desde su menú. El moderador puede consultar usuarios y gestionar el estado de cuentas estándar; el supervisor también puede asignar roles. El usuario común conserva la interfaz financiera normal y no ve la sección administrativa. Las cuentas de prueba solo deben usarse localmente.
 
-La opción **Auditoría** aparece en el menú del supervisor. Registra solicitudes autenticadas del backend y acciones de escritura de la demostración local; la pantalla permite filtrar por fechas, rol, método y texto. No se almacenan contraseñas, tokens ni cuerpos de formularios. La demostración local etiqueta sus eventos como `LOCAL`.
+La opción **Auditoría** aparece en el menú del supervisor. Registra solicitudes autenticadas del backend y acciones de escritura de la demostración local; la pantalla permite filtrar por fechas, rol, método y texto. **Estado del sistema** muestra la disponibilidad de API y base de datos. Los logs HTTP estructurados se consultan en stdout o en Vercel. No se almacenan contraseñas, tokens, query strings ni cuerpos de formularios. La demostración local etiqueta sus eventos como `LOCAL`.
+
+Las contraseñas nuevas se guardan con Argon2id. Los hashes bcrypt heredados se actualizan automáticamente al iniciar sesión con la contraseña correcta.
+
+## Staging en Vercel
+
+El despliegue se prepara como dos proyectos Vercel independientes: el backend con Root Directory `backend` y el frontend con Root Directory `frontend`. Antes del despliegue, crea PostgreSQL en un proveedor accesible desde Vercel y ejecuta las migraciones del backend con la URL de staging. Configura los secretos `DATABASE_URL`, `JWT_SECRET` (al menos 32 caracteres) y `CORS_ORIGIN` solo en la configuración de entorno de Vercel; el frontend requiere `VITE_API_URL` con el dominio del backend y el sufijo `/api`. Configura `VITE_FINANCE_MODE=local` para el demo financiero, que se guarda en el navegador. Las instrucciones completas están en [backend/README.md](./backend/README.md#despliegue-de-staging-en-vercel).
+
+No puedo publicar directamente en una cuenta de Vercel ni provisionar una base externa sin acceso a esas cuentas. No compartas credenciales aquí.
 
 ## Pruebas
 

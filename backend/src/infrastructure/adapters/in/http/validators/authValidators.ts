@@ -39,7 +39,8 @@ export const iniciarSesionSchema = z.object({
     .email('El correo electronico no tiene un formato valido.'),
   password: z
     .string({ required_error: 'La contrasena es obligatoria.' })
-    .min(1, 'La contrasena es obligatoria.'),
+    .min(1, 'La contrasena es obligatoria.')
+    .max(72, 'La contrasena no puede superar los 72 caracteres.'),
 });
 
 /* ------------------------------------------------------------------ */

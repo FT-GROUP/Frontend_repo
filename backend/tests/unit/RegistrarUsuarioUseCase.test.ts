@@ -15,6 +15,7 @@ describe('RegistrarUsuarioUseCaseImpl', () => {
   function crearMocks() {
     const usuarioRepository: jest.Mocked<UsuarioRepository> = {
       guardar: jest.fn(),
+      actualizarPasswordHash: jest.fn(),
       buscarPorEmail: jest.fn(),
       buscarPorId: jest.fn(),
       existeEmail: jest.fn(),
@@ -23,6 +24,7 @@ describe('RegistrarUsuarioUseCaseImpl', () => {
     const passwordHasher: jest.Mocked<PasswordHasher> = {
       hash: jest.fn(),
       comparar: jest.fn(),
+      necesitaRehash: jest.fn(),
     };
 
     return { usuarioRepository, passwordHasher };

@@ -43,7 +43,10 @@ export default function Layout({ user, onLogout, children }) {
     ? [
         ...NAV_BASE,
         { to: '/administracion', label: 'Administración', short: 'Admin', icon: 'shield' },
-        ...(user.rol === 'supervisor' ? [{ to: '/auditoria', label: 'Auditoría', short: 'Auditoría', icon: 'file' }] : []),
+        ...(user.rol === 'supervisor' ? [
+          { to: '/auditoria', label: 'Auditoría', short: 'Auditoría', icon: 'file' },
+          { to: '/estado-sistema', label: 'Estado del sistema', short: 'Estado', icon: 'shield' },
+        ] : []),
       ]
     : NAV_BASE
 

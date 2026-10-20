@@ -54,6 +54,10 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
     return this.aEntidad(resultado.rows[0]);
   }
 
+  async actualizarPasswordHash(usuarioId: number, passwordHash: string): Promise<void> {
+    await this.pool.query('UPDATE usuario SET password_hash = $1 WHERE id = $2', [passwordHash, usuarioId]);
+  }
+
   async buscarPorEmail(email: string): Promise<Usuario | null> {
     const query = `
       SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado, rol

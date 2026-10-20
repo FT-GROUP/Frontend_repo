@@ -51,8 +51,14 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
   }
 
   // Error no esperado: no se expone informacion interna al cliente.
-  // eslint-disable-next-line no-console
-  console.error('Error no controlado:', err);
+  const code = 'code' in err ? err.code : undefined;
+  console.error(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'error',
+    type: 'unhandled_request_error',
+    errorName: err.name,
+    code,
+  }));
   res.status(500).json({ error: 'ErrorInterno', mensaje: 'Ha ocurrido un error inesperado.' });
 }
 

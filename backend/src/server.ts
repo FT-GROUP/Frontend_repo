@@ -13,10 +13,13 @@ async function iniciar(): Promise<void> {
     // eslint-disable-next-line no-console
     console.log('Conexion a PostgreSQL establecida correctamente.');
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('No fue posible conectar a PostgreSQL. Verifique las variables de entorno (.env).');
-    // eslint-disable-next-line no-console
-    console.error(error);
+    const code = error instanceof Error && 'code' in error ? error.code : undefined;
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      type: 'database_startup_check_failed',
+      code,
+    }));
     process.exit(1);
   }
 

@@ -14,7 +14,7 @@ const REFRESH_TOKEN_DIAS_VALIDEZ = 7;
 /**
  * Caso de uso "Iniciar sesion".
  *
- * 1. Verifica credenciales contra el hash almacenado (Bcrypt).
+ * 1. Verifica credenciales contra el hash almacenado.
  * 2. Verifica que el usuario pueda iniciar sesion (estado = activo).
  * 3. Genera un access token (JWT de corta duracion) y un refresh token
  *    (persistido en REFRESH_TOKEN, de mayor duracion) segun las
@@ -44,6 +44,11 @@ export class IniciarSesionUseCaseImpl implements IniciarSesionUseCase {
 
     if (!usuario.puedeIniciarSesion()) {
       throw new UsuarioInactivoError();
+    }
+
+    if (this.passwordHasher.necesitaRehash(usuario.passwordHash)) {
+      const passwordHashActualizado = await this.passwordHasher.hash(comando.password);
+      await this.usuarioRepository.actualizarPasswordHash(usuario.id as number, passwordHashActualizado);
     }
 
     const accessToken = this.tokenService.generarAccessToken({

@@ -45,7 +45,11 @@ async function rawRequest(path, { method = 'GET', body, auth = false } = {}) {
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
     const detalle = (Array.isArray(data.errores) && data.errores[0]?.mensaje) || (Array.isArray(data.detalles) && data.detalles[0]?.mensaje)
-    throw new ApiError(detalle || data.mensaje || data.message || 'No fue posible completar la solicitud.', response.status, data.detalles)
+    throw new ApiError(
+      detalle || data.mensaje || data.message || 'No fue posible completar la solicitud.',
+      response.status,
+      data.detalles ?? data,
+    )
   }
   return data
 }

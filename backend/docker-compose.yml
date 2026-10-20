@@ -1,5 +1,3 @@
-version: "3.8"
-
 # Levanta unicamente PostgreSQL para desarrollo local.
 # Uso: docker compose up -d
 services:
