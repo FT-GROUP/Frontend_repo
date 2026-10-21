@@ -73,14 +73,19 @@ export async function request(path, options = {}) {
   try {
     return await rawRequest(path, options)
   } catch (err) {
-    if (options.auth && err.status === 401 && tokens.refresh && tokens.refresh !== 'demo_refresh_ft') {
-      try {
-        await refreshSession()
-        return await rawRequest(path, options)
-      } catch {
+    if (options.auth && err.status === 401) {
+      if (tokens.refresh && tokens.refresh !== 'demo_refresh_ft') {
+        try {
+          await refreshSession()
+          return await rawRequest(path, options)
+        } catch {
+          tokens.clear()
+          sessionStorage.removeItem('ft_current_user')
+          throw err
+        }
+      } else {
         tokens.clear()
         sessionStorage.removeItem('ft_current_user')
-        throw err
       }
     }
     throw err

@@ -59,6 +59,7 @@ export function Login({ onLogin }) {
   const submit = async e => {
     e.preventDefault(); setError(''); setSending(true)
     try {
+      authApi.logout().catch(() => {})
       const user = await authApi.login(form.email.trim(), form.password)
       onLogin(user)
       const home = ['moderador', 'supervisor'].includes(user.rol) ? '/administracion' : '/panel'

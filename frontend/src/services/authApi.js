@@ -22,7 +22,11 @@ export const authApi = {
   async login(email, password) {
     const cleanEmail = email.trim().toLowerCase()
 
-    // 1. Intentar autenticación real contra el backend Express / PostgreSQL
+    // 1. Limpiar tokens anteriores antes de autenticar
+    tokens.clear()
+    sessionStorage.removeItem(DEMO_USER_KEY)
+
+    // 2. Intentar autenticación real contra el backend Express / PostgreSQL
     try {
       const data = await request('/auth/login', { method: 'POST', body: { email: cleanEmail, password } })
       tokens.save(data)
