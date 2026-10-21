@@ -15,10 +15,14 @@ export const auditoriaApi = {
       if (value !== '' && value !== undefined && value !== null) params.set(key, value)
     })
     try {
-      return await request(`/auditoria?${params}`, { auth: true })
+      const res = await request(`/auditoria?${params}`, { auth: true })
+      if (Array.isArray(res)) {
+        return { eventos: res, total: res.length }
+      }
+      return { eventos: res?.eventos || [], total: res?.total ?? (res?.eventos ? res.eventos.length : 0) }
     } catch (err) {
       if (err.status === 0 || err.status === 404 || err.status === 502) {
-        return DEMO_EVENTOS
+        return { eventos: DEMO_EVENTOS, total: DEMO_EVENTOS.length }
       }
       throw err
     }

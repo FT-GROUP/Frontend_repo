@@ -93,7 +93,7 @@ export default function Auditoria() {
       <section className="audit-summary" aria-live="polite">
         <div className="audit-summary-icon"><Icon name="shield" size={21} /></div>
         <div>
-          <strong>{resultado.total.toLocaleString('es-CO')} eventos encontrados</strong>
+          <strong>{(resultado?.total ?? 0).toLocaleString('es-CO')} eventos encontrados</strong>
           <p>Regla 5W: quién, qué, cuándo, dónde y por qué. Se registran solicitudes autenticadas y acciones de demostración.</p>
         </div>
       </section>
@@ -197,7 +197,7 @@ export default function Auditoria() {
         {!loading && resultado.total > 0 && (
           <div className="audit-pagination">
             <span className="muted small">
-              Página {pagina + 1} de {paginaTotal} · {resultado.total.toLocaleString('es-CO')} eventos
+              Página {pagina + 1} de {paginaTotal} · {(resultado?.total ?? 0).toLocaleString('es-CO')} eventos
             </span>
             <div>
               <button className="btn btn-ghost btn-sm" type="button" disabled={pagina === 0} onClick={() => setPagina(actual => actual - 1)}>Anterior</button>
