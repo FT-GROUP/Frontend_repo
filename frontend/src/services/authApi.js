@@ -22,58 +22,31 @@ export const authApi = {
   async login(email, password) {
     const cleanEmail = email.trim().toLowerCase()
 
-    // Acceso demo directo
-    if (cleanEmail === 'demo@ftgroup.com' || cleanEmail === 'admin@ftgroup.com' || cleanEmail === 'johan@ftgroup.com' || cleanEmail === 'supervisor@ftgroup.test') {
+    // 1. Intentar autenticación real contra el backend Express / PostgreSQL
+    try {
+      const data = await request('/auth/login', { method: 'POST', body: { email: cleanEmail, password } })
+      tokens.save(data)
+      saveLocalUser(data.usuario)
+      return data.usuario
+    } catch (err) {
+      // Si el backend responde error 400/401 explícito de credenciales incorrectas, no enmascarar a menos que sea demo
+      if (err.status !== 0 && cleanEmail !== 'demo@ftgroup.com') {
+        throw err
+      }
+
+      // 2. Fallback de demostración offline si el servidor no responde
       const demoUser = {
         id: 1,
         nombre: cleanEmail.includes('supervisor') ? 'Supervisor' : 'Johan Steven Martínez',
         email: cleanEmail,
         telefono: '3001234567',
-        rol: 'supervisor',
+        rol: cleanEmail.includes('moderador') ? 'moderador' : 'supervisor',
         estado: 'activo',
         fechaRegistro: '2026-08-15T12:00:00.000Z',
       }
       tokens.save({ accessToken: 'demo_token_ft', refreshToken: 'demo_refresh_ft' })
       saveLocalUser(demoUser)
       return demoUser
-    }
-
-    if (cleanEmail === 'moderador@ftgroup.test') {
-      const demoUser = {
-        id: 2,
-        nombre: 'Moderador',
-        email: cleanEmail,
-        telefono: '3001234568',
-        rol: 'moderador',
-        estado: 'activo',
-        fechaRegistro: '2026-08-15T12:00:00.000Z',
-      }
-      tokens.save({ accessToken: 'demo_token_ft', refreshToken: 'demo_refresh_ft' })
-      saveLocalUser(demoUser)
-      return demoUser
-    }
-
-    try {
-      const data = await request('/auth/login', { method: 'POST', body: { email, password } })
-      tokens.save(data)
-      saveLocalUser(data.usuario)
-      return data.usuario
-    } catch (err) {
-      if (err.status === 0 || password === 'demo123' || password === '12345678') {
-        const fallbackUser = {
-          id: 1,
-          nombre: email.split('@')[0],
-          email: cleanEmail,
-          telefono: '3001234567',
-          rol: cleanEmail.includes('admin') || cleanEmail.includes('super') ? 'supervisor' : 'supervisor', // supervisor por defecto para ver todos los módulos
-          estado: 'activo',
-          fechaRegistro: new Date().toISOString(),
-        }
-        tokens.save({ accessToken: 'demo_token_ft', refreshToken: 'demo_refresh_ft' })
-        saveLocalUser(fallbackUser)
-        return fallbackUser
-      }
-      throw err
     }
   },
 
