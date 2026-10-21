@@ -1,7 +1,9 @@
 import express, { NextFunction, Response, Router } from 'express';
 import '../../../../config/env'; // asegura que dotenv cargue el .env antes de leer las variables de IA
 import { autenticar, RequestAutenticado } from '../middlewares/authMiddleware';
-import { ClaudeFacturaExtractor, IaNoDisponibleError } from '../../../out/ia/ClaudeFacturaExtractor';
+import { ClaudeFacturaExtractor } from '../../../out/ia/ClaudeFacturaExtractor';
+import { OpenAIFacturaExtractor } from '../../../out/ia/OpenAIFacturaExtractor';
+import { IaNoDisponibleError } from '../../../out/ia/facturaIaComun';
 import { FacturaExtractor, TipoArchivoFactura } from '../../../../../domain/ports/out/FacturaExtractor';
 
 /**
@@ -14,23 +16,42 @@ import { FacturaExtractor, TipoArchivoFactura } from '../../../../../domain/port
  *   global de 100kb de express.json).
  *
  * Variables de entorno:
- *   ANTHROPIC_API_KEY  clave de la API de Claude (si falta, responde 503
- *                      y el frontend usa el OCR local como respaldo).
- *   IA_MODELO          modelo a usar (por defecto claude-haiku-5-5).
+ *   OPENAI_API_KEY     clave de la API de OpenAI (proveedor por defecto).
+ *   OPENAI_BASE_URL    opcional, para un endpoint compatible con OpenAI.
+ *   ANTHROPIC_API_KEY  alternativa: clave de la API de Claude.
+ *   IA_PROVEEDOR       opcional: "openai" o "anthropic". Si no se define,
+ *                      se usa OpenAI cuando existe OPENAI_API_KEY.
+ *   IA_MODELO          modelo a usar (por defecto gpt-4o-mini con OpenAI
+ *                      o claude-haiku-5-5 con Claude).
  *   IA_MAX_MB          tamaño maximo del archivo (por defecto 8).
  *   IA_LIMITE_POR_HORA solicitudes por usuario por hora (por defecto 30).
+ *
+ * Sin ninguna clave responde 503 y el frontend usa el OCR local.
  */
 
 const TIPOS_PERMITIDOS: TipoArchivoFactura[] = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const maxMb = Number(process.env.IA_MAX_MB ?? 8);
 const limitePorHora = Number(process.env.IA_LIMITE_POR_HORA ?? 30);
 
-let extractor: FacturaExtractor | null = process.env.ANTHROPIC_API_KEY
-  ? new ClaudeFacturaExtractor({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-    modelo: process.env.IA_MODELO || 'claude-haiku-5-5',
-  })
-  : null;
+function crearExtractor(): FacturaExtractor | null {
+  const proveedor = (process.env.IA_PROVEEDOR ?? (process.env.OPENAI_API_KEY ? 'openai' : 'anthropic')).toLowerCase();
+  if (proveedor === 'openai' && process.env.OPENAI_API_KEY) {
+    return new OpenAIFacturaExtractor({
+      apiKey: process.env.OPENAI_API_KEY,
+      modelo: process.env.IA_MODELO || 'gpt-4o-mini',
+      urlBase: process.env.OPENAI_BASE_URL || undefined,
+    });
+  }
+  if (proveedor === 'anthropic' && process.env.ANTHROPIC_API_KEY) {
+    return new ClaudeFacturaExtractor({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      modelo: process.env.IA_MODELO || 'claude-haiku-5-5',
+    });
+  }
+  return null;
+}
+
+let extractor: FacturaExtractor | null = crearExtractor();
 
 /** Permite inyectar un extractor falso en pruebas. */
 export function configurarExtractorFacturas(nuevo: FacturaExtractor | null): void {
