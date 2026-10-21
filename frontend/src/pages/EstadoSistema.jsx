@@ -64,7 +64,9 @@ export default function EstadoSistema() {
               <h2 className="card-title">Información operativa</h2>
               <p>Tiempo activo: {estado.uptimeSegundos} segundos</p>
               <p className="muted small">
-                Última comprobación: {new Date(estado.actualizadoEn).toLocaleString()}
+                Última comprobación: {estado.actualizadoEn && !isNaN(new Date(estado.actualizadoEn).getTime())
+                  ? new Date(estado.actualizadoEn).toLocaleString()
+                  : new Date().toLocaleString()}
               </p>
             </section>
           )}

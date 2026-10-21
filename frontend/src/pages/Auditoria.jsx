@@ -38,10 +38,13 @@ const ACTION_LABELS = {
 }
 
 function fechaLocal(value) {
+  if (!value) return 'Fecha no disponible'
+  const date = new Date(value)
+  if (isNaN(date.getTime())) return 'Fecha no disponible'
   return new Intl.DateTimeFormat('es-CO', {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(new Date(value))
+  }).format(date)
 }
 
 function accionLegible(accion) {

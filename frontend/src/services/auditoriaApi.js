@@ -1,11 +1,11 @@
 import { request } from './http'
 
 const DEMO_EVENTOS = [
-  { id: '1', creado_en: new Date(Date.now() - 60000).toISOString(), actor_email: 'supervisor@ftgroup.test', rol: 'supervisor', accion: 'GET /api/auditoria/', ruta: '/api/auditoria/', codigo_estado: 200 },
-  { id: '2', creado_en: new Date(Date.now() - 120000).toISOString(), actor_email: 'supervisor@ftgroup.test', rol: 'supervisor', accion: 'GET /api/estado', ruta: '/api/estado', codigo_estado: 200 },
-  { id: '3', creado_en: new Date(Date.now() - 300000).toISOString(), actor_email: 'moderador@ftgroup.test', rol: 'moderador', accion: 'GET /api/administracion/usuarios', ruta: '/api/administracion/usuarios', codigo_estado: 200 },
-  { id: '4', creado_en: new Date(Date.now() - 600000).toISOString(), actor_email: 'usuario@ftgroup.test', rol: 'usuario', accion: 'POST /api/grupos/1/gastos', ruta: '/api/grupos/1/gastos', codigo_estado: 201 },
-  { id: '5', creado_en: new Date(Date.now() - 900000).toISOString(), actor_email: 'demo@ftgroup.com', rol: 'supervisor', accion: 'POST /api/auth/login', ruta: '/api/auth/login', codigo_estado: 200 },
+  { id: '1', fecha: new Date(Date.now() - 60000).toISOString(), actorEmail: 'supervisor@ftgroup.test', actorRol: 'supervisor', accion: 'GET /api/auditoria/', metodo: 'GET', ruta: '/api/auditoria/', estadoHttp: 200, motivo: 'Consultar registro de auditoría' },
+  { id: '2', fecha: new Date(Date.now() - 120000).toISOString(), actorEmail: 'supervisor@ftgroup.test', actorRol: 'supervisor', accion: 'GET /api/estado', metodo: 'GET', ruta: '/api/estado', estadoHttp: 200, motivo: 'Monitorear salud del sistema' },
+  { id: '3', fecha: new Date(Date.now() - 300000).toISOString(), actorEmail: 'moderador@ftgroup.test', actorRol: 'moderador', accion: 'GET /api/administracion/usuarios', metodo: 'GET', ruta: '/api/administracion/usuarios', estadoHttp: 200, motivo: 'Listar usuarios para moderación' },
+  { id: '4', fecha: new Date(Date.now() - 600000).toISOString(), actorEmail: 'usuario@ftgroup.test', actorRol: 'usuario', accion: 'gasto_crear', metodo: 'POST', ruta: '/api/grupos/1/gastos', estadoHttp: 201, motivo: 'Registrar gasto colaborativo' },
+  { id: '5', fecha: new Date(Date.now() - 900000).toISOString(), actorEmail: 'demo@ftgroup.com', actorRol: 'supervisor', accion: 'POST /api/auth/login', metodo: 'POST', ruta: '/api/auth/login', estadoHttp: 200, motivo: 'Inicio de sesión exitoso' },
 ]
 
 export const auditoriaApi = {
