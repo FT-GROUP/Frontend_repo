@@ -14,7 +14,6 @@ import Profile from './pages/Profile'
 import Administracion from './pages/Administracion'
 import Auditoria from './pages/Auditoria'
 import EstadoSistema from './pages/EstadoSistema'
-import FlujoArquitectura from './pages/FlujoArquitectura'
 import BrandMark from './components/BrandMark'
 
 class ErrorBoundary extends React.Component {
@@ -109,7 +108,6 @@ export default function App() {
         <Route path="/administracion" element={staffPage(<Administracion {...props} />)} />
         <Route path="/auditoria" element={supervisorPage(<Auditoria />)} />
         <Route path="/estado-sistema" element={supervisorPage(<EstadoSistema />)} />
-        <Route path="/flujo-datos" element={supervisorPage(<FlujoArquitectura />)} />
         <Route path="*" element={<Navigate to={user ? home : '/login'} replace />} />
       </Routes>
     </ErrorBoundary>

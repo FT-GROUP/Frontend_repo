@@ -50,7 +50,6 @@ export default function Layout({ user, onLogout, children }) {
         ...(user.rol === 'supervisor' ? [
           { to: '/auditoria', label: 'Auditoría', short: 'Auditoría', icon: 'file' },
           { to: '/estado-sistema', label: 'Estado del sistema', short: 'Estado', icon: 'shield' },
-          { to: '/flujo-datos', label: 'Flujo y arquitectura', short: 'Flujo', icon: 'brain' },
         ] : []),
       ]
     : NAV_BASE
