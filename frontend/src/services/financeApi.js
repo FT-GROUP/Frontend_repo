@@ -10,6 +10,7 @@ import { request } from './http'
 import { splitEqual, pendingDebts, netBalances, pairwise } from '../utils/balances'
 import { today } from '../utils/format'
 import { arrayFromResponse } from '../utils/apiResponse'
+import { usesLocalFinance as shouldUseLocalFinance } from '../utils/demoAccount'
 import { auditoriaApi } from './auditoriaApi'
 
 const MODE = import.meta.env.VITE_FINANCE_MODE || 'api'
@@ -362,7 +363,7 @@ const localConAuditoria = new Proxy(local, {
 
 function withFallback(remoteFn, localFn) {
   return async function (user, ...args) {
-    if (MODE === 'local') {
+    if (shouldUseLocalFinance(user, MODE)) {
       return localFn(user, ...args)
     }
     try {
@@ -392,3 +393,4 @@ export const financeApi = {
 }
 
 export const financeMode = MODE
+export const usesLocalFinance = user => shouldUseLocalFinance(user, MODE)

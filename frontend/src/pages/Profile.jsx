@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { authApi } from '../services/authApi'
-import { financeApi, financeMode } from '../services/financeApi'
+import { financeApi, usesLocalFinance } from '../services/financeApi'
 import { Alert, Avatar, PageHeader } from '../components/ui'
 import Icon from '../components/Icon'
 import { useI18n } from '../i18n/I18nContext'
@@ -178,10 +178,10 @@ export default function Profile({ user, setUser, onLogout }) {
             </div>
           </section>
 
-          {financeMode === 'local' && (
+          {usesLocalFinance(user) && (
             <section className="card">
               <h2 className="card-title">Datos de grupos y gastos</h2>
-              <p className="muted small">El backend aún no expone los módulos de grupos y gastos, así que esos datos se guardan en este navegador.</p>
+              <p className="muted small">Los datos de ejemplo se guardan solo en este navegador y no modifican el backend.</p>
               <div className="btn-row">
                 <button className="btn btn-ghost btn-sm" onClick={() => resetData(false)}>Restaurar demostración</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => resetData(true)}>Empezar vacío</button>

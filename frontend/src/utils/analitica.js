@@ -140,7 +140,7 @@ export function indicadores(gastos, me) {
 /* ------------------------------------------------------------------ */
 
 const ALFA = 0.4        // ponderación del suavizado exponencial
-const VENTANA = 3       // meses de la media móvil
+const VENTANA_DIAS = 7  // días de la media móvil
 const UMBRAL_Z = 2      // desviaciones a partir de las cuales un gasto es atípico
 const R2_MINIMO = 0.3   // ajuste mínimo para considerar que hay tendencia
 
@@ -217,9 +217,17 @@ export function estimadores(gastos, serie, { horizonte = 3, hoy = new Date() } =
   // 1. Run rate: extrapola el mes en curso por los días transcurridos.
   const runRate = abierto ? (enCurso.total / transcurridos) * dias : null
 
-  // 2. Media móvil de los últimos meses cerrados.
-  const ventana = base.slice(-VENTANA)
-  const mediaMovil = media(ventana)
+  // 2. Media móvil de los últimos siete días, expresada como estimación mensual.
+  const inicioVentana = new Date(anio, mes - 1, transcurridos)
+  inicioVentana.setDate(inicioVentana.getDate() - VENTANA_DIAS + 1)
+  const fechaInicio = `${inicioVentana.getFullYear()}-${String(inicioVentana.getMonth() + 1).padStart(2, '0')}-${String(inicioVentana.getDate()).padStart(2, '0')}`
+  const fechaFin = `${anio}-${String(mes).padStart(2, '0')}-${String(transcurridos).padStart(2, '0')}`
+  const totalSemana = gastos.reduce((total, gasto) => (
+    gasto.fecha_gasto >= fechaInicio && gasto.fecha_gasto <= fechaFin
+      ? total + gasto.monto_total
+      : total
+  ), 0)
+  const mediaMovil = (totalSemana / VENTANA_DIAS) * dias
 
   // 3. Regresión lineal.
   const { b0, b1, r2 } = regresion(base)
@@ -230,7 +238,7 @@ export function estimadores(gastos, serie, { horizonte = 3, hoy = new Date() } =
 
   const metodos = [
     ...(abierto ? [{ id: 'run_rate', nombre: 'Run rate', valor: runRate, nota: `Mes en curso extrapolado (${transcurridos} de ${dias} días)` }] : []),
-    { id: 'media_movil', nombre: 'Media móvil', valor: mediaMovil, nota: `Promedio de los últimos ${ventana.length} meses` },
+    { id: 'media_movil', nombre: 'Media móvil', valor: mediaMovil, nota: `Gasto de los últimos ${VENTANA_DIAS} días, extrapolado al mes` },
     { id: 'regresion', nombre: 'Regresión lineal', valor: lineal, nota: `Mínimos cuadrados · R² = ${r2.toFixed(3)}` },
     { id: 'suavizado', nombre: 'Suavizado exponencial', valor: exponencial, nota: `Alfa = ${ALFA}, pondera los meses recientes` },
   ]

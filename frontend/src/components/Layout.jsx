@@ -7,6 +7,8 @@ import BrandMark from './BrandMark'
 import CurrencySwitch from './CurrencySwitch'
 import ThemeSwitch from './ThemeSwitch'
 import LanguageSwitch from './LanguageSwitch'
+import HelpAssistant from './HelpAssistant'
+import { usesLocalFinance } from '../services/financeApi'
 import { useI18n } from '../i18n/I18nContext'
 
 const NAV_BASE = [
@@ -96,6 +98,7 @@ export default function Layout({ user, onLogout, children }) {
           <button className="icon-btn menu-btn" onClick={() => setOpen(true)} aria-label="Abrir menú"><Icon name="menu" size={22} /></button>
           <span className="topbar-brand"><Logo /></span>
           <span className="topbar-text">FT-GROUP · Sistema de gestión financiera colaborativa</span>
+          {usesLocalFinance(user) && <span className="demo-mode-label">EXPOSICIÓN · DATOS DE EJEMPLO</span>}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <CurrencySwitch />
             <ThemeSwitch compact />
@@ -114,6 +117,7 @@ export default function Layout({ user, onLogout, children }) {
           </NavLink>
         ))}
       </nav>
+      <HelpAssistant />
     </div>
   )
 }

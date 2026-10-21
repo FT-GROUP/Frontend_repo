@@ -47,6 +47,10 @@ npm run dev
 
 En `frontend/.env`, `VITE_FINANCE_MODE=local` guarda grupos y gastos en el navegador con datos de demostración; el inicio de sesión siempre usa el backend. `VITE_FINANCE_MODE=api` usa el backend para todo.
 
+La aplicación incluye un chatbot local de preguntas frecuentes sobre el uso del sistema. Funciona sin claves de API, servicios externos ni configuración adicional; no accede a datos personales o financieros.
+
+La cuenta de exposición `usuario@ftgroup.test` tiene grupos y gastos de ejemplo en los módulos financieros; estos datos se guardan en el navegador y no afectan al backend. Desde **Mi perfil** se pueden restaurar.
+
 Con ambos procesos activos, abre http://localhost:5173 e inicia sesión con una de estas cuentas de desarrollo:
 
 | Rol | Correo | Contraseña |
