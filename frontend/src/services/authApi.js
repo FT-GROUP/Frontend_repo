@@ -23,12 +23,28 @@ export const authApi = {
     const cleanEmail = email.trim().toLowerCase()
 
     // Acceso demo directo
-    if (cleanEmail === 'demo@ftgroup.com' || cleanEmail === 'admin@ftgroup.com' || cleanEmail === 'johan@ftgroup.com') {
+    if (cleanEmail === 'demo@ftgroup.com' || cleanEmail === 'admin@ftgroup.com' || cleanEmail === 'johan@ftgroup.com' || cleanEmail === 'supervisor@ftgroup.test') {
       const demoUser = {
         id: 1,
-        nombre: 'Johan Steven Martínez',
+        nombre: cleanEmail.includes('supervisor') ? 'Supervisor' : 'Johan Steven Martínez',
         email: cleanEmail,
         telefono: '3001234567',
+        rol: 'supervisor',
+        estado: 'activo',
+        fechaRegistro: '2026-08-15T12:00:00.000Z',
+      }
+      tokens.save({ accessToken: 'demo_token_ft', refreshToken: 'demo_refresh_ft' })
+      saveLocalUser(demoUser)
+      return demoUser
+    }
+
+    if (cleanEmail === 'moderador@ftgroup.test') {
+      const demoUser = {
+        id: 2,
+        nombre: 'Moderador',
+        email: cleanEmail,
+        telefono: '3001234568',
+        rol: 'moderador',
         estado: 'activo',
         fechaRegistro: '2026-08-15T12:00:00.000Z',
       }
@@ -49,6 +65,7 @@ export const authApi = {
           nombre: email.split('@')[0],
           email: cleanEmail,
           telefono: '3001234567',
+          rol: cleanEmail.includes('admin') || cleanEmail.includes('super') ? 'supervisor' : 'supervisor', // supervisor por defecto para ver todos los módulos
           estado: 'activo',
           fechaRegistro: new Date().toISOString(),
         }
