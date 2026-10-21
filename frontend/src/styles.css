@@ -213,10 +213,11 @@ h1, h2, h3 { margin: 0; }
 .audit-table tbody tr:last-child td { border-bottom: 0; }
 .audit-table tbody tr:hover { background: var(--surface-2); }
 .audit-date { min-width: 150px; color: #c3cfe8; white-space: nowrap; }
-.audit-email, .audit-action, .audit-route { display: block; }
+.audit-email, .audit-action, .audit-route, .audit-reason { display: block; }
 .audit-email { max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .audit-action { color: var(--text); }
 .audit-route { max-width: 300px; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.audit-reason { max-width: 300px; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .audit-status { display: inline-flex; padding: 4px 8px; border: 1px solid; border-radius: 999px; font-size: 11px; font-weight: 700; }
 .audit-status-ok { border-color: rgba(74, 222, 128, .25); background: rgba(74, 222, 128, .1); color: var(--pos); }
 .audit-status-error { border-color: rgba(248, 113, 113, .25); background: rgba(248, 113, 113, .1); color: var(--danger); }

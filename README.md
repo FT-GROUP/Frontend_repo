@@ -59,6 +59,8 @@ Los roles moderador y supervisor acceden a **Administración** desde su menú. E
 
 La opción **Auditoría** aparece en el menú del supervisor. Registra solicitudes autenticadas del backend y acciones de escritura de la demostración local; la pantalla permite filtrar por fechas, rol, método y texto. **Estado del sistema** muestra la disponibilidad de API y base de datos. Los logs HTTP estructurados se consultan en stdout o en Vercel. No se almacenan contraseñas, tokens, query strings ni cuerpos de formularios. La demostración local etiqueta sus eventos como `LOCAL`.
 
+La bitácora implementa la regla 5W (quién, qué, cuándo, dónde y por qué). Consulta el [manual de administración y técnico del sistema auditor](./backend/AUDITORIA.md) para operarlo y desplegarlo.
+
 Las contraseñas nuevas se guardan con Argon2id. Los hashes bcrypt heredados se actualizan automáticamente al iniciar sesión con la contraseña correcta.
 
 ## Staging en Vercel

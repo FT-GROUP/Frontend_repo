@@ -8,6 +8,7 @@ import {
 } from '../../../../config/container';
 import { RolUsuario } from '../../../../../domain/entities/Usuario';
 import { PayloadTokenAcceso } from '../../../../../domain/ports/out/TokenService';
+import { motivoSolicitudAuditoria } from './motivoAuditoria';
 
 export interface RequestAutenticado extends Request {
   usuario?: { id: number; email: string; rol: RolUsuario };
@@ -52,6 +53,7 @@ export function auditarActividad(req: RequestAutenticado, res: Response, next: N
         actorEmail: usuario.email,
         actorRol: usuario.rol,
         accion: `${req.method} ${ruta}`,
+        motivo: motivoSolicitudAuditoria(req.method, ruta),
         metodo: req.method,
         ruta,
         estadoHttp: res.statusCode,

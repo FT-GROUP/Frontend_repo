@@ -158,6 +158,8 @@ La migración `005_auditoria.sql` crea una bitácora cronológica de actividad. 
 
 No se guardan contraseñas, tokens ni cuerpos de solicitud. La interfaz no ofrece acciones para editar o eliminar eventos. Las acciones enviadas desde la demostración local se distinguen con método `LOCAL`; son eventos declarados por el cliente, mientras que las solicitudes de API se registran en el backend.
 
+Cada evento incluye el motivo para completar la regla 5W (quién, qué, cuándo, dónde y por qué). La migración `006_auditoria_regla_5w.sql` conserva los eventos anteriores e indica cuando el motivo histórico no estaba disponible. El [manual de administración y técnico del auditor](./AUDITORIA.md) explica filtros, despliegue, persistencia, logs y diagnóstico.
+
 ### Estado del sistema y logs
 
 El supervisor puede abrir **Estado del sistema** para comprobar API, disponibilidad de PostgreSQL, latencia de la consulta, tiempo activo y fecha de actualización. El endpoint protegido responde con HTTP 503 si PostgreSQL no está disponible y no incluye detalles de conexión.

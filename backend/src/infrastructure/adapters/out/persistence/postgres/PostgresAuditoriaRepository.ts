@@ -12,6 +12,7 @@ interface FilaEventoAuditoria {
   actor_email: string;
   actor_rol: EventoAuditoria['actorRol'];
   accion: string;
+  motivo: string;
   metodo: string;
   ruta: string;
   estado_http: number;
@@ -25,13 +26,14 @@ export class PostgresAuditoriaRepository implements AuditoriaRepository {
   async registrar(evento: NuevoEventoAuditoria): Promise<void> {
     await this.pool.query(
       `INSERT INTO auditoria_evento
-         (actor_id, actor_email, actor_rol, accion, metodo, ruta, estado_http, solicitud_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+         (actor_id, actor_email, actor_rol, accion, motivo, metodo, ruta, estado_http, solicitud_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         evento.actorId,
         evento.actorEmail,
         evento.actorRol,
         evento.accion,
+        evento.motivo,
         evento.metodo,
         evento.ruta,
         evento.estadoHttp,
@@ -65,7 +67,7 @@ export class PostgresAuditoriaRepository implements AuditoriaRepository {
 
     const pageValues = [...valores, filtros.limite, filtros.offset];
     const resultado = await this.pool.query<FilaEventoAuditoria>(
-      `SELECT id, actor_id, actor_email, actor_rol, accion, metodo, ruta,
+      `SELECT id, actor_id, actor_email, actor_rol, accion, motivo, metodo, ruta,
               estado_http, solicitud_id, fecha
        FROM auditoria_evento ${where}
        ORDER BY fecha DESC, id DESC
@@ -80,6 +82,7 @@ export class PostgresAuditoriaRepository implements AuditoriaRepository {
         actorEmail: fila.actor_email,
         actorRol: fila.actor_rol,
         accion: fila.accion,
+        motivo: fila.motivo,
         metodo: fila.metodo,
         ruta: fila.ruta,
         estadoHttp: fila.estado_http,

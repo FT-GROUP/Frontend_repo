@@ -6,6 +6,7 @@ export interface EventoAuditoria {
   actorEmail: string;
   actorRol: RolUsuario;
   accion: string;
+  motivo: string;
   metodo: string;
   ruta: string;
   estadoHttp: number;
@@ -24,10 +25,11 @@ export interface FiltrosAuditoria {
 }
 
 export interface NuevoEventoAuditoria {
-  actorId: number;
+  actorId: number | null;
   actorEmail: string;
   actorRol: RolUsuario;
   accion: string;
+  motivo: string;
   metodo: string;
   ruta: string;
   estadoHttp: number;

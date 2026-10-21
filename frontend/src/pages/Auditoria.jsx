@@ -20,6 +20,7 @@ const METHODS = [
 ]
 const ACTION_LABELS = {
   INICIO_SESION: 'Inicio de sesión',
+  INICIO_SESION_FALLIDO: 'Inicio de sesión rechazado',
   REGISTRO: 'Registro de cuenta',
   panel_consultar: 'Panel consultado (demostración)',
   grupos_consultar: 'Grupos consultados (demostración)',
@@ -93,7 +94,7 @@ export default function Auditoria() {
         <div className="audit-summary-icon"><Icon name="shield" size={21} /></div>
         <div>
           <strong>{resultado.total.toLocaleString('es-CO')} eventos encontrados</strong>
-          <p>Se registran las solicitudes autenticadas y las acciones de la demostración financiera.</p>
+          <p>Regla 5W: quién, qué, cuándo, dónde y por qué. Se registran solicitudes autenticadas y acciones de demostración.</p>
         </div>
       </section>
 
@@ -117,7 +118,7 @@ export default function Auditoria() {
           </select>
         </label>
         <label className="audit-filter-field">
-          <span>Acción</span>
+          <span>Método</span>
           <select value={filters.metodo} onChange={event => setFilters(current => ({ ...current, metodo: event.target.value }))}>
             {METHODS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             <option value="LOCAL">Actividad local</option>
@@ -154,7 +155,7 @@ export default function Auditoria() {
           <div className="audit-table-wrap">
             <table className="audit-table">
               <thead>
-                <tr><th>Fecha</th><th>Actor</th><th>Rol</th><th>Acción</th><th>Resultado</th></tr>
+                <tr><th>Cuándo</th><th>Quién</th><th>Rol</th><th>Qué</th><th>Dónde</th><th>Por qué</th><th>Resultado</th></tr>
               </thead>
               <tbody>
                 {resultado.eventos.map(evento => (
@@ -162,13 +163,14 @@ export default function Auditoria() {
                     <td className="audit-date">{fechaLocal(evento.fecha)}</td>
                     <td>
                       <strong className="audit-email">{evento.actorEmail}</strong>
-                      <small className="audit-route">{evento.ruta}</small>
                     </td>
                     <td><span className={`admin-role admin-role-${evento.actorRol}`}><Icon name="shield" size={14} />{evento.actorRol}</span></td>
                     <td>
                       <strong className="audit-action">{accionLegible(evento.accion)}</strong>
                       <small className="audit-route">{evento.metodo}</small>
                     </td>
+                    <td><small className="audit-route">{evento.ruta}</small></td>
+                    <td><small className="audit-reason">{evento.motivo}</small></td>
                     <td><span className={`audit-status ${evento.estadoHttp < 400 ? 'audit-status-ok' : 'audit-status-error'}`}>{evento.estadoHttp}</span></td>
                   </tr>
                 ))}
@@ -183,7 +185,8 @@ export default function Auditoria() {
                   </div>
                   <strong className="audit-email">{evento.actorEmail}</strong>
                   <span className="audit-action">{accionLegible(evento.accion)}</span>
-                  <small className="audit-route">{evento.metodo} · {evento.ruta}</small>
+                  <small className="audit-route">Dónde: {evento.metodo} · {evento.ruta}</small>
+                  <small className="audit-reason">Por qué: {evento.motivo}</small>
                   <small className="muted">{fechaLocal(evento.fecha)}</small>
                 </article>
               ))}
