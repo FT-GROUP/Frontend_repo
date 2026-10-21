@@ -9,6 +9,7 @@
 import { request } from './http'
 import { splitEqual, pendingDebts, netBalances, pairwise } from '../utils/balances'
 import { today } from '../utils/format'
+import { arrayFromResponse } from '../utils/apiResponse'
 import { auditoriaApi } from './auditoriaApi'
 
 const MODE = import.meta.env.VITE_FINANCE_MODE || 'api'
@@ -302,12 +303,21 @@ const local = {
 const remote = {
   // Las respuestas del backend usan los mismos nombres de campos que el modo local.
   summary: () => request('/panel/resumen', { auth: true }),
-  groups: () => request('/grupos', { auth: true }),
+  async groups() {
+    const response = await request('/grupos', { auth: true })
+    return arrayFromResponse(response, ['grupos'], '/grupos')
+  },
   createGroup: (_u, body) => request('/grupos', { method: 'POST', auth: true, body }),
   addMember: (_u, id, email) => request(`/grupos/${id}/miembros`, { method: 'POST', auth: true, body: { email } }),
-  history: () => request('/historial?limite=50', { auth: true }),
+  async history() {
+    const response = await request('/historial?limite=50', { auth: true })
+    return arrayFromResponse(response, ['historial', 'movimientos'], '/historial')
+  },
   archiveGroup: (_u, id) => request(`/grupos/${id}`, { method: 'DELETE', auth: true }),
-  expenses: () => request('/gastos', { auth: true }),
+  async expenses() {
+    const response = await request('/gastos', { auth: true })
+    return arrayFromResponse(response, ['gastos'], '/gastos')
+  },
   createExpense: (_u, body) => request('/gastos', { method: 'POST', auth: true, body }),
   deleteExpense: (_u, id) => request(`/gastos/${id}`, { method: 'DELETE', auth: true }),
   payShare: (u, gastoId, usuarioId = String(u.id)) =>

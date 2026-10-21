@@ -1,9 +1,10 @@
 import { request } from './http'
+import { arrayFromResponse } from '../utils/apiResponse'
 
 export const adminApi = {
   async users() {
     const data = await request('/administracion/usuarios', { auth: true })
-    return data.usuarios
+    return arrayFromResponse(data, ['usuarios'], '/administracion/usuarios')
   },
 
   async changeStatus(id, estado) {
