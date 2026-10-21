@@ -109,7 +109,8 @@ export const authApi = {
         await refreshSession()
         return await this.me()
       } catch {
-        if (local) return local
+        tokens.clear()
+        sessionStorage.removeItem(DEMO_USER_KEY)
         return null
       }
     }
