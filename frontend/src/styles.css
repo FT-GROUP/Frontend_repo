@@ -887,6 +887,9 @@ body[data-theme="vivid"] {
 .assistant-send { width: 40px; height: 40px; min-height: 40px; padding: 0; }
 .assistant-send:disabled { opacity: .5; cursor: not-allowed; }
 .assistant-disclaimer { margin: 0; padding: 0 14px 10px; text-align: center; }
+/* Confirmación del ticket que abre el asistente de soporte. */
+.assistant-ticket { display: flex; align-items: center; gap: 4px; max-width: 88%; margin: -4px 0 0; padding: 7px 11px; border: 1px solid var(--accent); border-radius: 11px; background: var(--accent-soft); color: var(--text); font-size: 12px; }
+.assistant-typing { color: var(--muted); font-style: italic; }
 
 @media (max-width: 720px) {
   .help-assistant { right: 14px; bottom: calc(76px + env(safe-area-inset-bottom)); }

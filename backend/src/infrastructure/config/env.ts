@@ -43,6 +43,18 @@ export const env = {
     .split(',')
     .map((origen) => origen.trim())
     .filter(Boolean),
+
+  // --- Asistente de soporte con IA (opcional) ---
+  // Sin IA_API_KEY el modulo queda deshabilitado: el endpoint responde 503
+  // y el chat del frontend usa su respaldo de preguntas frecuentes. El
+  // servidor arranca igual, de modo que nadie necesita una clave para
+  // trabajar en el resto del proyecto.
+  iaApiKey: process.env.IA_API_KEY,
+  iaBaseUrl: process.env.IA_BASE_URL ?? 'https://api.openai.com/v1',
+  iaModelo: process.env.IA_MODELO ?? 'gpt-6-luna',
+  iaTemperatura: Number.parseFloat(process.env.IA_TEMPERATURA ?? '0.3'),
+  iaMaxTokens: Number.parseInt(process.env.IA_MAX_TOKENS ?? '700', 10),
+  iaTimeoutMs: Number.parseInt(process.env.IA_TIMEOUT_MS ?? '25000', 10),
 };
 
 if (env.jwtSecret.length < 32) {
@@ -65,4 +77,19 @@ if (env.nodeEnv === 'production' && env.jwtSecret === 'solo-desarrollo-local-cam
 }
 if (!Number.isSafeInteger(env.databasePoolMax) || env.databasePoolMax < 1) {
   throw new Error('DB_POOL_MAX debe ser un entero positivo.');
+}
+if (!Number.isFinite(env.iaTemperatura) || env.iaTemperatura < 0 || env.iaTemperatura > 2) {
+  throw new Error('IA_TEMPERATURA debe ser un numero entre 0 y 2.');
+}
+if (!Number.isSafeInteger(env.iaMaxTokens) || env.iaMaxTokens < 64) {
+  throw new Error('IA_MAX_TOKENS debe ser un entero mayor o igual a 64.');
+}
+if (!Number.isSafeInteger(env.iaTimeoutMs) || env.iaTimeoutMs < 1000) {
+  throw new Error('IA_TIMEOUT_MS debe ser un entero de al menos 1000 milisegundos.');
+}
+if (env.iaApiKey !== undefined && env.iaApiKey.trim().length === 0) {
+  throw new Error('IA_API_KEY esta definida pero vacia: quitala del .env o asigna una clave valida.');
+}
+if (env.nodeEnv === 'production' && !env.iaBaseUrl.startsWith('https://')) {
+  throw new Error('IA_BASE_URL debe usar HTTPS en producción.');
 }
