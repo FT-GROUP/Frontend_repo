@@ -1,4 +1,8 @@
-import { AsistenteService, ContextoUsuario } from '../../src/application/services/AsistenteService';
+import {
+  AsistenteService,
+  ContextoUsuario,
+  limpiarMarcado,
+} from '../../src/application/services/AsistenteService';
 import { SoporteService } from '../../src/application/services/SoporteService';
 import {
   AsistenteIA,
@@ -78,6 +82,35 @@ describe('AsistenteService', () => {
   const conHerramienta = (nombre: string, argumentos: Record<string, unknown>): RespuestaModelo => ({
     texto: null,
     llamadas: [{ id: 'call_1', nombre, argumentos }],
+  });
+
+  describe('limpiarMarcado', () => {
+    it('quita la negrita de Markdown que el chat mostraria literal', () => {
+      expect(limpiarMarcado('Abre **Panel** y revisa **Debes**.')).toBe(
+        'Abre Panel y revisa Debes.',
+      );
+      expect(limpiarMarcado('Entra en __Grupos__.')).toBe('Entra en Grupos.');
+    });
+
+    it('quita las almohadillas de titulo', () => {
+      expect(limpiarMarcado('## Pasos\nAbre Gastos.')).toBe('Pasos\nAbre Gastos.');
+    });
+
+    it('no toca los asteriscos sueltos ni el resto del texto', () => {
+      expect(limpiarMarcado('El total es 3 * 2 = 6.')).toBe('El total es 3 * 2 = 6.');
+      expect(limpiarMarcado('Usa «Panel» para verlo.')).toBe('Usa «Panel» para verlo.');
+    });
+  });
+
+  it('limpia el marcado antes de guardar y devolver la respuesta', async () => {
+    const { service, repository } = crearEntorno([texto('Abre **Grupos** y pulsa **Crear grupo**.')]);
+
+    const resultado = await service.atender({ usuario, mensaje: '¿Como creo un grupo?' });
+
+    expect(resultado.respuesta).toBe('Abre Grupos y pulsa Crear grupo.');
+    expect(repository.guardarMensajeConversacion).toHaveBeenNthCalledWith(
+      2, 55, 'asistente', 'Abre Grupos y pulsa Crear grupo.',
+    );
   });
 
   it('falla con AsistenteNoDisponibleError si no hay credenciales', async () => {

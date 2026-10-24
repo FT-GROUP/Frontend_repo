@@ -22,6 +22,19 @@ const RESPUESTA_POR_DEFECTO =
   'No logre resolverlo por aqui. ¿Puedes contarme con un poco mas de detalle que ocurre y en que pantalla?';
 
 /**
+ * El chat muestra texto plano, asi que el Markdown se veria literal
+ * ("**Panel**"). El prompt ya pide no usarlo, pero los modelos lo escapan
+ * igual, asi que se limpian las marcas de enfasis como ultima barrera.
+ * Solo se tocan los pares de ** y __: nada mas se altera.
+ */
+export function limpiarMarcado(texto: string): string {
+  return texto
+    .replace(/\*\*(.+?)\*\*/gs, '$1')
+    .replace(/__(.+?)__/gs, '$1')
+    .replace(/^#{1,6}\s+/gm, '');
+}
+
+/**
  * Datos del usuario atendido que el prompt necesita. Se define en la capa
  * de aplicacion: el constructor del prompt vive en infraestructura y
  * depende de este tipo, no al contrario.
@@ -127,7 +140,7 @@ export class AsistenteService {
       }
     }
 
-    const respuesta = (texto ?? '').trim() || RESPUESTA_POR_DEFECTO;
+    const respuesta = limpiarMarcado((texto ?? '').trim()) || RESPUESTA_POR_DEFECTO;
 
     await this.repository.guardarMensajeConversacion(conversacion.id, 'usuario', mensaje);
     await this.repository.guardarMensajeConversacion(conversacion.id, 'asistente', respuesta);

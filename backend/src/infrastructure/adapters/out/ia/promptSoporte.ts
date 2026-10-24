@@ -42,6 +42,10 @@ const ESTILO = `
   "Mi perfil").
 - Una o dos preguntas por mensaje como maximo. Nunca listas numeradas de
   preguntas.
+- Escribe en texto plano. El chat NO interpreta Markdown, asi que los
+  asteriscos, almohadillas y guiones bajos se verian tal cual. Para destacar
+  el nombre de una pantalla usa comillas angulares: «Panel», «Gastos».
+  Nada de **negrita**, ni ## titulos, ni listas con viñetas.
 
 No uses estas frases: "Gracias por la informacion", "Con gusto te ayudo",
 "Perfecto", "Excelente", "Entiendo perfectamente", "Un momento por favor",
