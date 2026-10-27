@@ -7,12 +7,12 @@ Frontend web (React + Vite) de FT. GROUP, basado en los prototipos de las versio
 | Ruta | Módulo | Datos |
 |---|---|---|
 | `/login`, `/registro` | Autenticación | **Backend real** (`/api/auth`) |
-| `/panel` | Panel de control: balance neto, te deben / debes, liquidaciones sugeridas, mis grupos, mapa | **Backend real** |
-| `/grupos` | Grupos financieros: tarjetas con miembros, total y mi balance; crear grupo; agregar integrantes | **Backend real** |
-| `/gastos` | Registro de gastos: filtro por grupo, tabla (tarjetas en celular), agregar gasto con división igual o personalizada, detalle y registro de pagos | **Backend real** |
+| `/panel` | Panel de control: balance neto, te deben / debes, liquidaciones sugeridas, mis grupos, mapa | **Backend real**, excepto la cuenta de exposición |
+| `/grupos` | Grupos financieros: tarjetas con miembros, total y mi balance; crear grupo; agregar integrantes | **Backend real**, excepto la cuenta de exposición |
+| `/gastos` | Registro de gastos: filtro por grupo, tabla (tarjetas en celular), agregar gasto con división igual o personalizada, detalle y registro de pagos | **Backend real**, excepto la cuenta de exposición |
 | `/analisis` | Análisis y predicciones: KPIs básicos con semáforo, indicadores, estimadores, proyección y gastos atípicos | Se calcula en el navegador con los datos de gastos y grupos |
-| `/historial` | Historial por mes con filtros de grupo y categoría, total filtrado y movimientos recientes | **Backend real** |
-| `/escanear` | Escaneo de recibos: carga/arrastre o cámara del celular, OCR con Tesseract.js y formulario prellenado | **Backend real** |
+| `/historial` | Historial por mes con filtros de grupo y categoría, total filtrado y movimientos recientes | **Backend real**, excepto la cuenta de exposición |
+| `/escanear` | Escaneo de recibos: carga/arrastre o cámara del celular, OCR con Tesseract.js y formulario prellenado | Usa los grupos de demostración de la cuenta de exposición |
 | `/perfil` | Ver/editar nombre y teléfono, desactivar cuenta, cerrar sesión | **Backend real** |
 | `/administracion` | Gestión de cuentas: consulta de usuarios y acciones permitidas por rol | **Backend real** |
 | `/auditoria` | Bitácora paginada y filtrable de actividad | **Solo supervisor** |
@@ -21,9 +21,9 @@ La ruta de administración solo está disponible para `moderador` y `supervisor`
 
 La auditoría está disponible únicamente para supervisores. Registra solicitudes autenticadas del backend y las acciones de escritura de la demostración local. No almacena contraseñas, tokens ni datos de formularios.
 
-Todo se guarda en PostgreSQL a través del backend. Para crear un grupo, los integrantes deben tener una cuenta registrada; se agregan por su correo.
+En las cuentas normales, los módulos financieros usan el backend y PostgreSQL. La cuenta común de exposición usa datos de ejemplo guardados en el navegador; las operaciones que realices con ella no modifican PostgreSQL. Para crear un grupo en el modo backend, los integrantes deben tener una cuenta registrada y se agregan por su correo.
 
-Si quieres mostrar la interfaz sin backend, pon `VITE_FINANCE_MODE=local`. En ese modo los datos se guardan en el navegador y se cargan datos de demostración.
+La cuenta `usuario@ftgroup.test` usa automáticamente datos financieros de demostración guardados solo en el navegador, incluso si `VITE_FINANCE_MODE=api`. Así puede recorrer con ejemplos el panel, grupos, gastos, historial, análisis y escaneo, sin modificar datos del backend. En «Mi perfil» se pueden restaurar los datos de ejemplo. Las demás cuentas siguen usando el modo configurado. Si quieres poner toda la app en modo demostración, usa `VITE_FINANCE_MODE=local`.
 
 ## Diseño adaptable
 
@@ -104,7 +104,7 @@ Los umbrales están en `METAS`, dentro de `kpis.js`.
 
 **Indicadores y estimadores** (`src/utils/analitica.js`):
 - **Indicadores:** gasto mensual promedio, ticket promedio y mediano, cumplimiento de pago, días para saldar, frecuencia, concentración de aportes (Herfindahl), % de gastos con OCR y distribución por categoría.
-- **Estimadores:** run rate, media móvil, regresión lineal (R²) y suavizado exponencial, combinados en un consenso.
+- **Estimadores:** run rate, media móvil basada en los últimos 7 días (extrapolada al mes), regresión lineal (R²) y suavizado exponencial, combinados en un consenso.
 - **Predicciones:** proyección de 3 o 6 meses con índice estacional y detección de gastos atípicos (puntaje z).
 
 **Datos históricos de prueba (modo local).** Inicia sesión, abre la consola del navegador, pega `scripts/seed-historico.js` y recarga la página. Así se cargan 12 meses de gastos.

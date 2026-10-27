@@ -99,3 +99,10 @@ test('modelos de análisis existentes: indicadores, estimadores y proyección', 
   assert.equal(r.estimadores.proyeccion[0].periodo, '2026-11')
   assert.ok(r.estimadores.metodos.some(m => m.id === 'suavizado'))
 })
+
+test('media móvil: usa los gastos de los últimos siete días y los extrapola al mes', () => {
+  const r = analizar(gastos, ME, { horizonte: 3, hoy: HOY })
+  const metodo = r.estimadores.metodos.find(m => m.id === 'media_movil')
+  assert.equal(metodo.valor, (90000 / 7) * 31)
+  assert.equal(metodo.nota, 'Gasto de los últimos 7 días, extrapolado al mes')
+})
