@@ -50,6 +50,19 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
+  // Errores del cliente generados por el parser de Express (body-parser):
+  // JSON mal formado (400) o cuerpo mayor al limite (413). No son fallos
+  // del servidor, asi que no se registran como error ni se responde 500.
+  const errorCliente = err as Error & { status?: number; type?: string };
+  if (errorCliente.type === 'entity.parse.failed') {
+    res.status(400).json({ error: 'JsonInvalido', mensaje: 'El cuerpo de la solicitud no es un JSON válido.' });
+    return;
+  }
+  if (errorCliente.type === 'entity.too.large') {
+    res.status(413).json({ error: 'CuerpoMuyGrande', mensaje: 'La solicitud supera el tamaño permitido.' });
+    return;
+  }
+
   // Error no esperado: no se expone informacion interna al cliente.
   const code = 'code' in err ? err.code : undefined;
   console.error(JSON.stringify({

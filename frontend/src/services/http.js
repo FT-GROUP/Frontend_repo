@@ -26,12 +26,12 @@ export class ApiError extends Error {
   }
 }
 
-async function rawRequest(path, { method = 'GET', body, auth = false } = {}) {
+async function rawRequest(path, { method = 'GET', body, auth = false, timeoutMs = 2500 } = {}) {
   const headers = { 'Content-Type': 'application/json' }
   if (auth && tokens.access) headers.Authorization = `Bearer ${tokens.access}`
 
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 2500)
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   let response
   try {
     response = await fetch(`${API_URL}${path}`, {
