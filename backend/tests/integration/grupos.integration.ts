@@ -110,11 +110,27 @@ describe('Integración · Grupos, gastos y balances', () => {
   });
 
   describe('Control de acceso (IDOR): un usuario ajeno no ve ni modifica el grupo', () => {
+    // Grupo propio de este bloque, para que pueda ejecutarse solo:
+    //   npx jest -c jest.integration.config.js -t "IDOR"
+    let grupoAjeno: number;
+    let gastoAjeno: number;
+
+    beforeAll(async () => {
+      const grupo = await request(app).post('/api/grupos').set(bearer(ana)).send({ nombre: 'Grupo privado de Ana' });
+      grupoAjeno = grupo.body.grupo.id;
+      await request(app).post(`/api/grupos/${grupoAjeno}/integrantes`).set(bearer(ana)).send({ usuarioId: beto.id });
+      const gasto = await request(app).post(`/api/grupos/${grupoAjeno}/gastos`).set(bearer(ana)).send({
+        descripcion: 'Cena privada', montoTotal: 60000, fechaGasto: '2026-10-22', categoria: 'alimentacion',
+        tipoDivision: 'equitativa', usuarioIds: [ana.id, beto.id],
+      });
+      gastoAjeno = gasto.body.gasto.id;
+    });
+
     const rutas = () => [
-      ['get', `/api/grupos/${grupoId}/integrantes`],
-      ['get', `/api/grupos/${grupoId}/gastos`],
-      ['get', `/api/grupos/${grupoId}/balances`],
-      ['get', `/api/grupos/${grupoId}/historial`],
+      ['get', `/api/grupos/${grupoAjeno}/integrantes`],
+      ['get', `/api/grupos/${grupoAjeno}/gastos`],
+      ['get', `/api/grupos/${grupoAjeno}/balances`],
+      ['get', `/api/grupos/${grupoAjeno}/historial`],
     ] as const;
 
     it('responde 403 en todas las consultas del grupo', async () => {
@@ -125,20 +141,19 @@ describe('Integración · Grupos, gastos y balances', () => {
     });
 
     it('no puede registrar gastos ni pagos en el grupo', async () => {
-      const gasto = await request(app).post(`/api/grupos/${grupoId}/gastos`).set(bearer(intruso)).send({
+      const gasto = await request(app).post(`/api/grupos/${grupoAjeno}/gastos`).set(bearer(intruso)).send({
         descripcion: 'Intento', montoTotal: 1000, fechaGasto: '2026-10-21', categoria: 'otro',
         tipoDivision: 'equitativa', usuarioIds: [intruso.id],
       });
       expect(gasto.status).toBe(403);
 
-      const gastos = await request(app).get(`/api/grupos/${grupoId}/gastos`).set(bearer(ana));
-      const pago = await request(app).post(`/api/grupos/gastos/${gastos.body.gastos[0].id}/pagos`).set(bearer(intruso));
+      const pago = await request(app).post(`/api/grupos/gastos/${gastoAjeno}/pagos`).set(bearer(intruso));
       expect(pago.status).toBe(403);
     });
 
     it('no lista el grupo entre los suyos', async () => {
       const respuesta = await request(app).get('/api/grupos').set(bearer(intruso));
-      expect(respuesta.body.grupos.map((g: { id: number }) => g.id)).not.toContain(grupoId);
+      expect(respuesta.body.grupos.map((g: { id: number }) => g.id)).not.toContain(grupoAjeno);
     });
   });
 

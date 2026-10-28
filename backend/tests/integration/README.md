@@ -39,6 +39,15 @@ Para correr una sola prueba o un grupo, filtra por nombre con `-t`:
 npx jest -c jest.integration.config.js -t "Fuerza bruta" --verbose
 ```
 
+Las pruebas de seguridad, autenticación, IA y control de acceso (IDOR) se
+pueden correr solas. El flujo principal de `grupos.integration.ts` (crear
+grupo → integrantes → gasto → balance → pago → historial) es un escenario
+secuencial: córrelo completo con
+
+```bash
+npx jest -c jest.integration.config.js grupos --verbose
+```
+
 La IA (OpenAI/Claude) nunca se llama: `ia.integration.ts` inyecta un extractor
 falso con `configurarExtractorFacturas`.
 
