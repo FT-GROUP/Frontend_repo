@@ -887,6 +887,36 @@ body[data-theme="vivid"] {
 .assistant-send { width: 40px; height: 40px; min-height: 40px; padding: 0; }
 .assistant-send:disabled { opacity: .5; cursor: not-allowed; }
 .assistant-disclaimer { margin: 0; padding: 0 14px 10px; text-align: center; }
+/* --- Página de Soporte: lista de casos y detalle --- */
+.ticket-filtros { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.ticket-lista { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.ticket-item { display: grid; gap: 9px; align-content: start; padding: 16px; }
+.ticket-item-top { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.ticket-numero { font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--muted); }
+.ticket-asunto { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+.ticket-item-meta { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 12px; }
+.ticket-item-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.ticket-ver { justify-self: start; }
+.ticket-tag { display: inline-flex; padding: 3px 9px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--inset); font-size: 11px; font-weight: 700; }
+.ticket-estado-abierto { border-color: rgba(96, 165, 250, .3); background: rgba(96, 165, 250, .12); color: #93c5fd; }
+.ticket-estado-revision { border-color: rgba(251, 191, 36, .3); background: rgba(251, 191, 36, .12); color: #fcd34d; }
+.ticket-estado-resuelto { border-color: rgba(74, 222, 128, .28); background: rgba(74, 222, 128, .12); color: #86efac; }
+.ticket-estado-cerrado { color: var(--muted); }
+.ticket-prioridad-alta { border-color: rgba(248, 113, 113, .3); background: rgba(248, 113, 113, .12); color: #fca5a5; }
+.ticket-prioridad-normal, .ticket-prioridad-baja { color: var(--muted); }
+.ticket-detalle-top { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+.ticket-detalle-asunto { margin: 0 0 6px; font-size: 16px; }
+.ticket-detalle-desc { margin: 0 0 10px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ticket-hilo-titulo { margin: 18px 0 9px; font-size: 13px; }
+.ticket-hilo { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.ticket-mensaje { padding: 10px 12px; border-radius: 12px; background: var(--inset); font-size: 13px; }
+.ticket-mensaje-moderador, .ticket-mensaje-supervisor { background: var(--accent-soft); }
+.ticket-mensaje-autor { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; font-size: 11px; font-weight: 700; }
+.ticket-mensaje-autor small { color: var(--muted); font-weight: 400; }
+.ticket-mensaje p { margin: 0; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ticket-responder { display: grid; gap: 8px; margin-top: 14px; justify-items: start; }
+.ticket-responder textarea { width: 100%; resize: vertical; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 11px; background: var(--inset); color: var(--text); font-size: 13px; }
+
 /* Confirmación del ticket que abre el asistente de soporte. */
 .assistant-ticket { display: flex; align-items: center; gap: 4px; max-width: 88%; margin: -4px 0 0; padding: 7px 11px; border: 1px solid var(--accent); border-radius: 11px; background: var(--accent-soft); color: var(--text); font-size: 12px; }
 .assistant-typing { color: var(--muted); font-style: italic; }

@@ -50,3 +50,25 @@ export function comentarTicket(numero, comentario) {
     body: { comentario },
   })
 }
+
+// --- Solo para moderador y supervisor -------------------------------------
+// El backend vuelve a comprobar el rol en cada llamada: ocultar estos
+// controles en la interfaz no concede ni niega permisos por sí solo.
+
+/** Bandeja con los tickets de todos los usuarios, por prioridad y fecha. */
+export async function listarBandeja({ estado = '', limite = 50, offset = 0 } = {}) {
+  const params = new URLSearchParams({ limite: String(limite), offset: String(offset) })
+  if (estado) params.set('estado', estado)
+  const data = await request(`/soporte/bandeja?${params}`, { auth: true })
+  return { tickets: Array.isArray(data?.tickets) ? data.tickets : [], total: data?.total ?? 0 }
+}
+
+/** Mueve el estado de un ticket y registra quién lo atendió. */
+export async function cambiarEstadoTicket(numero, estado) {
+  const data = await request(`/soporte/tickets/${encodeURIComponent(numero)}/estado`, {
+    method: 'PATCH',
+    auth: true,
+    body: { estado },
+  })
+  return data?.ticket ?? null
+}
