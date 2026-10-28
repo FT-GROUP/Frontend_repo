@@ -23,8 +23,9 @@ const valores: Record<string, string> = {
 for (const [clave, valor] of Object.entries(valores)) {
   process.env[clave] ??= valor;
 }
-// La IA se prueba con un extractor falso: nunca se llama a OpenAI/Claude.
-// Se dejan vacias (no se borran) para que dotenv no las tome de un .env local:
-// dotenv nunca sobrescribe variables que ya existen.
+// La IA nunca se llama de verdad: ia.integration.ts inyecta un extractor
+// falso con configurarExtractorFacturas() en cada prueba. IA_API_KEY no se
+// puede dejar vacia (env.ts lo rechaza), asi que solo se fuerza el proveedor.
+process.env.IA_PROVEEDOR = 'openai';
 process.env.OPENAI_API_KEY = '';
 process.env.ANTHROPIC_API_KEY = '';

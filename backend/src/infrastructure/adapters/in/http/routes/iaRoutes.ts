@@ -1,5 +1,5 @@
 import express, { NextFunction, Response, Router } from 'express';
-import '../../../../config/env'; // asegura que dotenv cargue el .env antes de leer las variables de IA
+import { env } from '../../../../config/env';
 import { autenticar, RequestAutenticado } from '../middlewares/authMiddleware';
 import { ClaudeFacturaExtractor } from '../../../out/ia/ClaudeFacturaExtractor';
 import { OpenAIFacturaExtractor } from '../../../out/ia/OpenAIFacturaExtractor';
@@ -15,18 +15,18 @@ import { FacturaExtractor, TipoArchivoFactura } from '../../../../../domain/port
  *   Cuerpo: el archivo en binario (no JSON, para no chocar con el limite
  *   global de 100kb de express.json).
  *
- * Variables de entorno:
- *   OPENAI_API_KEY     clave de la API de OpenAI (proveedor por defecto).
- *   OPENAI_BASE_URL    opcional, para un endpoint compatible con OpenAI.
- *   ANTHROPIC_API_KEY  alternativa: clave de la API de Claude.
- *   IA_PROVEEDOR       opcional: "openai" o "anthropic". Si no se define,
- *                      se usa OpenAI cuando existe OPENAI_API_KEY.
- *   IA_MODELO          modelo a usar (por defecto gpt-4o-mini con OpenAI
- *                      o claude-haiku-5-5 con Claude).
- *   IA_MAX_MB          tamaño maximo del archivo (por defecto 8).
- *   IA_LIMITE_POR_HORA solicitudes por usuario por hora (por defecto 30).
+ * Variables de entorno (comparte la clave con el asistente de soporte):
+ *   IA_API_KEY          clave de la API (la MISMA del agente de soporte).
+ *   IA_BASE_URL         URL compatible con OpenAI (por defecto api.openai.com).
+ *   IA_MODELO_FACTURAS  modelo con vision para leer facturas (por defecto
+ *                       gpt-4o-mini). Es distinto de IA_MODELO, que usa el
+ *                       agente de soporte.
+ *   IA_MAX_MB           tamaño maximo del archivo (por defecto 8).
+ *   IA_LIMITE_POR_HORA  solicitudes por usuario por hora (por defecto 30).
  *
- * Sin ninguna clave responde 503 y el frontend usa el OCR local.
+ *   Alternativa opcional con Claude: IA_PROVEEDOR=anthropic y ANTHROPIC_API_KEY.
+ *
+ * Sin clave responde 503 y el frontend usa el OCR local.
  */
 
 const TIPOS_PERMITIDOS: TipoArchivoFactura[] = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
@@ -34,21 +34,24 @@ const maxMb = Number(process.env.IA_MAX_MB ?? 8);
 const limitePorHora = Number(process.env.IA_LIMITE_POR_HORA ?? 30);
 
 function crearExtractor(): FacturaExtractor | null {
-  const proveedor = (process.env.IA_PROVEEDOR ?? (process.env.OPENAI_API_KEY ? 'openai' : 'anthropic')).toLowerCase();
-  if (proveedor === 'openai' && process.env.OPENAI_API_KEY) {
-    return new OpenAIFacturaExtractor({
-      apiKey: process.env.OPENAI_API_KEY,
-      modelo: process.env.IA_MODELO || 'gpt-4o-mini',
-      urlBase: process.env.OPENAI_BASE_URL || undefined,
-    });
+  const proveedor = (process.env.IA_PROVEEDOR ?? 'openai').toLowerCase();
+  if (proveedor === 'anthropic') {
+    return process.env.ANTHROPIC_API_KEY
+      ? new ClaudeFacturaExtractor({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        modelo: process.env.IA_MODELO_FACTURAS || 'claude-haiku-5-5',
+      })
+      : null;
   }
-  if (proveedor === 'anthropic' && process.env.ANTHROPIC_API_KEY) {
-    return new ClaudeFacturaExtractor({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      modelo: process.env.IA_MODELO || 'claude-haiku-5-5',
-    });
-  }
-  return null;
+  // Misma clave que el asistente de soporte (IA_API_KEY). OPENAI_API_KEY se
+  // acepta solo por compatibilidad con la primera version de esta funcion.
+  const apiKey = env.iaApiKey?.trim() || process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) return null;
+  return new OpenAIFacturaExtractor({
+    apiKey,
+    modelo: process.env.IA_MODELO_FACTURAS || 'gpt-4o-mini',
+    urlBase: env.iaBaseUrl,
+  });
 }
 
 let extractor: FacturaExtractor | null = crearExtractor();

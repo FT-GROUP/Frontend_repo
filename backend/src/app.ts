@@ -11,6 +11,8 @@ import administracionRoutes from './infrastructure/adapters/in/http/routes/admin
 import auditoriaRoutes from './infrastructure/adapters/in/http/routes/auditoriaRoutes';
 import estadoRoutes from './infrastructure/adapters/in/http/routes/estadoRoutes';
 import iaRoutes from './infrastructure/adapters/in/http/routes/iaRoutes';
+import soporteRoutes from './infrastructure/adapters/in/http/routes/soporteRoutes';
+import asistenteRoutes from './infrastructure/adapters/in/http/routes/asistenteRoutes';
 import { auditarActividad } from './infrastructure/adapters/in/http/middlewares/authMiddleware';
 import { errorHandler, rutaNoEncontrada } from './infrastructure/adapters/in/http/middlewares/errorHandler';
 import { env } from './infrastructure/config/env';
@@ -68,6 +70,8 @@ export function crearApp(): Application {
   app.use('/api/auditoria', auditoriaRoutes);
   app.use('/api/estado', estadoRoutes);
   app.use('/api/ia', iaRoutes);
+  app.use('/api/soporte', soporteRoutes);
+  app.use('/api/asistente', asistenteRoutes);
 
   // --- 404 y manejo centralizado de errores ---
   app.use(rutaNoEncontrada);

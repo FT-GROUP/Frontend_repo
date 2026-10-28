@@ -15,6 +15,8 @@ const RECURSOS: Record<string, string> = {
   grupos: 'grupos y gastos compartidos',
   notificaciones: 'notificaciones',
   reportes: 'reportes financieros',
+  soporte: 'tickets de soporte al cliente',
+  asistente: 'el asistente de soporte con IA',
 }
 
 export function motivoSolicitudAuditoria(metodo: string, ruta: string): string {

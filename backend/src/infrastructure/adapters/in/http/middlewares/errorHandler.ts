@@ -1,12 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import {
   AccesoDenegadoError,
+  AsistenteNoDisponibleError,
   CredencialesInvalidasError,
   ConflictoEstadoError,
   EmailYaRegistradoError,
   GastoNoEncontradoError,
   GrupoNoEncontradoError,
   NotificacionNoEncontradaError,
+  TicketNoEncontradoError,
   TokenInvalidoError,
   UsuarioInactivoError,
   UsuarioNoEncontradoError,
@@ -45,7 +47,7 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
-  if (err instanceof UsuarioNoEncontradoError || err instanceof GrupoNoEncontradoError || err instanceof GastoNoEncontradoError || err instanceof NotificacionNoEncontradaError) {
+  if (err instanceof UsuarioNoEncontradoError || err instanceof GrupoNoEncontradoError || err instanceof GastoNoEncontradoError || err instanceof NotificacionNoEncontradaError || err instanceof TicketNoEncontradoError) {
     res.status(404).json({ error: err.name, mensaje: err.message });
     return;
   }
@@ -60,6 +62,13 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
   }
   if (errorCliente.type === 'entity.too.large') {
     res.status(413).json({ error: 'CuerpoMuyGrande', mensaje: 'La solicitud supera el tamaño permitido.' });
+    return;
+  }
+
+  // El asistente con IA es una funcion opcional: si no hay credenciales
+  // configuradas se responde 503 para que el cliente use su respaldo local.
+  if (err instanceof AsistenteNoDisponibleError) {
+    res.status(503).json({ error: err.name, mensaje: err.message });
     return;
   }
 

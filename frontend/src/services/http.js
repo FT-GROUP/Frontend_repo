@@ -26,12 +26,17 @@ export class ApiError extends Error {
   }
 }
 
-async function rawRequest(path, { method = 'GET', body, auth = false, timeoutMs = 2500 } = {}) {
+// Las peticiones normales fallan rápido; una llamada al asistente puede
+// tardar varios segundos porque detrás hay un modelo de lenguaje, así que
+// puede pedir un tiempo de espera mayor con la opción `timeout`.
+const TIMEOUT_POR_DEFECTO = 2500
+
+async function rawRequest(path, { method = 'GET', body, auth = false, timeout = TIMEOUT_POR_DEFECTO } = {}) {
   const headers = { 'Content-Type': 'application/json' }
   if (auth && tokens.access) headers.Authorization = `Bearer ${tokens.access}`
 
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const timer = setTimeout(() => controller.abort(), timeout)
   let response
   try {
     response = await fetch(`${API_URL}${path}`, {
