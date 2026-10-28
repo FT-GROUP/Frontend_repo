@@ -28,7 +28,10 @@ export const authApi = {
 
     // 2. Intentar autenticación real contra el backend Express / PostgreSQL
     try {
-      const data = await request('/auth/login', { method: 'POST', body: { email: cleanEmail, password } })
+      // Tiempo de espera amplio: el primer login tras un arranque en frío (Vercel)
+      // más el hash Argon2 puede tardar varios segundos, y agotarlo activaría
+      // por error el modo demostración sin conexión.
+      const data = await request('/auth/login', { method: 'POST', body: { email: cleanEmail, password }, timeout: 15000 })
       tokens.save(data)
       saveLocalUser(data.usuario)
       return data.usuario
