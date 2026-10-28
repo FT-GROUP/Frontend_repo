@@ -6,8 +6,13 @@ prueba pasa por rutas, middlewares, validadores, casos de uso y repositorios.
 
 ## Requisitos
 
-PostgreSQL 16 accesible con usuario `postgres` / contraseña `postgres` en
-`localhost:5432` (el `docker compose up -d` de esta carpeta sirve).
+PostgreSQL 16 en marcha. Con Docker basta `docker compose up -d` en esta
+carpeta (expone el puerto **5439**).
+
+Las pruebas toman la conexión (`DB_HOST`, `DB_PORT`, `DB_USER`,
+`DB_PASSWORD`) de tu `backend/.env`, así que funcionan igual con Docker
+(5439) o con PostgreSQL instalado (5432). Si no hay `.env`, usan
+`localhost:5432` con `postgres`/`postgres`.
 
 ## Ejecutar
 
@@ -17,15 +22,21 @@ npm run test:all           # unitarias + integración
 ```
 
 Antes de empezar, `globalSetup.ts` crea la base `ft_group_test` si no existe,
-**la vacía** y ejecuta todas las migraciones de `db/migrations`. Por seguridad
-se niega a correr si `DB_NAME` no termina en `_test`, así que nunca toca la
-base de desarrollo (`ft_group`).
+**la vacía** y ejecuta todas las migraciones de `db/migrations`. Nunca usa
+`DB_NAME` ni `DATABASE_URL` del `.env`, y se niega a correr si la base no
+termina en `_test`, así que tus datos de desarrollo (`ft_group`) no se tocan.
 
-Para usar otra conexión, define las variables antes de ejecutar (tienen
-prioridad sobre `env.ts`), por ejemplo:
+Para usar otra conexión, define las variables en la terminal (tienen
+prioridad sobre el `.env`), por ejemplo en PowerShell:
+
+```powershell
+$env:DB_PORT="5432"; npm run test:integration
+```
+
+Para correr una sola prueba o un grupo, filtra por nombre con `-t`:
 
 ```bash
-DB_HOST=127.0.0.1 DB_PASSWORD=otra DB_NAME=mi_base_test npm run test:integration
+npx jest -c jest.integration.config.js -t "Fuerza bruta" --verbose
 ```
 
 La IA (OpenAI/Claude) nunca se llama: `ia.integration.ts` inyecta un extractor
