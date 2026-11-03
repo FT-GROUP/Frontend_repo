@@ -51,6 +51,20 @@ export class NotificacionNoEncontradaError extends DomainError {
   }
 }
 
+export class TicketNoEncontradoError extends DomainError {
+  constructor(identificador: string | number) {
+    super(`No se encontro el ticket de soporte "${identificador}".`);
+  }
+}
+
+export class AsistenteNoDisponibleError extends DomainError {
+  constructor(
+    mensaje = 'El asistente con IA no esta configurado en este servidor.',
+  ) {
+    super(mensaje);
+  }
+}
+
 export class AccesoDenegadoError extends DomainError {}
 
 export class ConflictoEstadoError extends DomainError {}

@@ -18,6 +18,7 @@ const NAV_BASE = [
   { to: '/historial', label: 'Historial financiero', short: 'Historial', icon: 'chart' },
   { to: '/analisis', label: 'Análisis y predicciones', short: 'Análisis', icon: 'trend' },
   { to: '/escanear', label: 'Escanear', short: 'Escanear', icon: 'scan', badge: 'IA' },
+  { to: '/soporte', label: 'Soporte', short: 'Soporte', icon: 'ticket' },
 ]
 
 export const NAV = NAV_BASE

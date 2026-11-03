@@ -10,6 +10,7 @@ import Expenses from './pages/Expenses'
 import History from './pages/History'
 import Analisis from './pages/Analisis'
 import Scan from './pages/Scan'
+import Soporte from './pages/Soporte'
 import Profile from './pages/Profile'
 import Administracion from './pages/Administracion'
 import Auditoria from './pages/Auditoria'
@@ -104,6 +105,7 @@ export default function App() {
         <Route path="/analisis" element={page(<Analisis {...props} />)} />
         <Route path="/indicadores" element={<Navigate to="/analisis" replace />} />
         <Route path="/escanear" element={page(<Scan {...props} />)} />
+        <Route path="/soporte" element={page(<Soporte {...props} />)} />
         <Route path="/perfil" element={page(<Profile user={user} setUser={setUser} onLogout={logout} />)} />
         <Route path="/administracion" element={staffPage(<Administracion {...props} />)} />
         <Route path="/auditoria" element={supervisorPage(<Auditoria />)} />
