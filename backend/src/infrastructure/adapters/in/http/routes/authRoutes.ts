@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AuthController } from '../controllers/AuthController';
 import { validarBody } from '../middlewares/validate';
 import { autenticar } from '../middlewares/authMiddleware';
+import { limitarIntentosLogin } from '../middlewares/limiteIntentosLogin';
 import {
   registrarUsuarioSchema,
   iniciarSesionSchema,
@@ -28,6 +29,7 @@ router.post(
 router.post(
   '/login',
   validarBody(iniciarSesionSchema),
+  limitarIntentosLogin,
   AuthController.iniciarSesion,
 );
 

@@ -18,6 +18,8 @@
     "micro:reports": "ts-node-dev --respawn --transpile-only src/microservices/reportsServer.ts",
     "micro:notifications": "ts-node-dev --respawn --transpile-only src/microservices/notificationsServer.ts",
     "test": "jest --runInBand",
+    "test:integration": "jest -c jest.integration.config.js --runInBand",
+    "test:all": "npm test && npm run test:integration",
     "lint": "tsc --noEmit"
   },
   "keywords": [

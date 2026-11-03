@@ -10,6 +10,7 @@ import notificacionRoutes from './infrastructure/adapters/in/http/routes/notific
 import administracionRoutes from './infrastructure/adapters/in/http/routes/administracionRoutes';
 import auditoriaRoutes from './infrastructure/adapters/in/http/routes/auditoriaRoutes';
 import estadoRoutes from './infrastructure/adapters/in/http/routes/estadoRoutes';
+import iaRoutes from './infrastructure/adapters/in/http/routes/iaRoutes';
 import soporteRoutes from './infrastructure/adapters/in/http/routes/soporteRoutes';
 import asistenteRoutes from './infrastructure/adapters/in/http/routes/asistenteRoutes';
 import { auditarActividad } from './infrastructure/adapters/in/http/middlewares/authMiddleware';
@@ -68,6 +69,7 @@ export function crearApp(): Application {
   app.use('/api/administracion', administracionRoutes);
   app.use('/api/auditoria', auditoriaRoutes);
   app.use('/api/estado', estadoRoutes);
+  app.use('/api/ia', iaRoutes);
   app.use('/api/soporte', soporteRoutes);
   app.use('/api/asistente', asistenteRoutes);
 
