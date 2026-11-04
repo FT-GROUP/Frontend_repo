@@ -116,3 +116,22 @@ export function autorizarRoles(...roles: RolUsuario[]) {
     next();
   };
 }
+
+export async function autenticarOpcional(req: RequestAutenticado, _res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+  const token = authHeader.substring('Bearer '.length).trim();
+  try {
+    const payload = tokenServiceInstancia.verificarAccessToken(token);
+    const usuario = await usuarioRepositoryInstancia.buscarPorId(payload.usuarioId);
+    if (usuario && usuario.puedeIniciarSesion()) {
+      req.usuario = { id: usuario.id as number, email: usuario.email, rol: usuario.rol };
+    }
+  } catch {
+    // Si no es valido se continua sin req.usuario
+  }
+  next();
+}

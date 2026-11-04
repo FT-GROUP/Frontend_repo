@@ -1,7 +1,7 @@
 // Cliente HTTP central. Añade el access token, y si el backend responde 401
 // intenta renovar la sesión una vez con /auth/refresh antes de fallar.
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+export const API_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:3000/api'
 
 const KEYS = { access: 'ft_access_token', refresh: 'ft_refresh_token' }
 

@@ -1,4 +1,4 @@
-import { pool } from '../adapters/out/persistence/postgres/db';
+import { pool, poolHistorico } from '../adapters/out/persistence/postgres/db';
 import { PostgresUsuarioRepository } from '../adapters/out/persistence/postgres/PostgresUsuarioRepository';
 import { PostgresRefreshTokenRepository } from '../adapters/out/persistence/postgres/PostgresRefreshTokenRepository';
 import { Argon2PasswordHasher } from '../adapters/out/security/Argon2PasswordHasher';
@@ -71,7 +71,7 @@ const grupoGastoRepository = new PostgresGrupoGastoRepository(pool);
 const grupoGastoService = new GrupoGastoService(grupoGastoRepository);
 export const grupoGastoController = new GrupoGastoController(grupoGastoService);
 
-const administracionRepository = new PostgresAdministracionRepository(pool);
+const administracionRepository = new PostgresAdministracionRepository(pool, poolHistorico);
 const administracionService = new AdministracionService(administracionRepository);
 export const administracionController = new AdministracionController(administracionService);
 

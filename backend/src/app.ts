@@ -3,6 +3,8 @@ import { randomUUID } from 'crypto';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import { createHandler } from 'graphql-http/lib/use/express';
+import { graphqlSchema } from './infrastructure/config/graphqlSchema';
 import authRoutes from './infrastructure/adapters/in/http/routes/authRoutes';
 import grupoRoutes from './infrastructure/adapters/in/http/routes/grupoRoutes';
 import reporteRoutes from './infrastructure/adapters/in/http/routes/reporteRoutes';
@@ -13,7 +15,7 @@ import estadoRoutes from './infrastructure/adapters/in/http/routes/estadoRoutes'
 import iaRoutes from './infrastructure/adapters/in/http/routes/iaRoutes';
 import soporteRoutes from './infrastructure/adapters/in/http/routes/soporteRoutes';
 import asistenteRoutes from './infrastructure/adapters/in/http/routes/asistenteRoutes';
-import { auditarActividad } from './infrastructure/adapters/in/http/middlewares/authMiddleware';
+import { auditarActividad, autenticarOpcional } from './infrastructure/adapters/in/http/middlewares/authMiddleware';
 import { errorHandler, rutaNoEncontrada } from './infrastructure/adapters/in/http/middlewares/errorHandler';
 import { env } from './infrastructure/config/env';
 
@@ -26,7 +28,9 @@ export function crearApp(): Application {
   const app = express();
 
   // --- Seguridad basica de cabeceras HTTP ---
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: false, // Permite consultas y visualizadores GraphQL
+  }));
 
   // --- CORS ---
   app.use(cors({
@@ -58,10 +62,23 @@ export function crearApp(): Application {
 
   // --- Chequeo de salud ---
   app.get('/health', (_req, res) => {
-    res.status(200).json({ estado: 'ok', servicio: 'ft-group-backend', modulo: 'usuarios' });
+    res.status(200).json({ estado: 'ok', servicio: 'ft-group-backend', modulo: 'usuarios', graphql: true, coldStorage: true });
   });
 
-  // --- Rutas del modulo de usuarios / autenticacion ---
+  // --- Endpoints GraphQL y Dual REST ---
+  app.use(
+    '/graphql',
+    autenticarOpcional,
+    createHandler({
+      schema: graphqlSchema,
+      context: (req: any) => ({
+        usuario: req.raw.usuario,
+        headers: req.raw.headers,
+      }),
+    }),
+  );
+
+  // --- Rutas del modulo de usuarios / autenticacion (REST) ---
   app.use('/api/auth', authRoutes);
   app.use('/api/grupos', grupoRoutes);
   app.use('/api/reportes', reporteRoutes);
