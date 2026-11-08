@@ -40,3 +40,4 @@ CREATE TABLE IF NOT EXISTS aporte_alcancia (
 );
 
 CREATE INDEX IF NOT EXISTS idx_aporte_alcancia_id ON aporte_alcancia (alcancia_id, fecha DESC);
+

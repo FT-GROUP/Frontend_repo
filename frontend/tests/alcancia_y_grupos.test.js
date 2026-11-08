@@ -53,3 +53,4 @@ describe('Alcancía compartida y Admin - Grupos de grupos', () => {
     assert.equal(creada.totalGrupos, 2)
   })
 })
+
