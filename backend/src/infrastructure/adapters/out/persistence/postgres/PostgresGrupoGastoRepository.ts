@@ -308,6 +308,73 @@ export class PostgresGrupoGastoRepository implements GrupoGastoRepository {
     if (resultado.rowCount === 0) throw new NotificacionNoEncontradaError(notificacionId);
   }
 
+  async obtenerAlcancia(usuarioId: number, grupoId: number): Promise<unknown> {
+    await this.exigirMiembro(this.pool, usuarioId, grupoId);
+    const alcanciaRes = await this.pool.query(
+      `INSERT INTO alcancia_grupo (grupo_id, nombre, meta, ahorrado)
+       VALUES ($1, 'Alcancía del grupo', 0, 0)
+       ON CONFLICT (grupo_id) DO UPDATE SET grupo_id = EXCLUDED.grupo_id
+       RETURNING id, grupo_id AS "grupoId", nombre, meta::float, ahorrado::float, actualizado_en AS "actualizadoEn"`,
+      [grupoId],
+    );
+    const alcancia = alcanciaRes.rows[0];
+    const aportesRes = await this.pool.query(
+      `SELECT a.id, a.usuario_id AS "usuarioId", u.nombre AS usuario, a.monto::float, a.nota, a.fecha
+       FROM aporte_alcancia a
+       JOIN usuario u ON u.id = a.usuario_id
+       WHERE a.alcancia_id = $1
+       ORDER BY a.fecha DESC, a.id DESC
+       LIMIT 30`,
+      [alcancia.id],
+    );
+    return {
+      ...alcancia,
+      aportes: aportesRes.rows,
+    };
+  }
+
+  async configurarAlcancia(usuarioId: number, grupoId: number, nombre: string, meta: number): Promise<unknown> {
+    return this.enTransaccion(async (client) => {
+      await this.exigirMiembro(client, usuarioId, grupoId, true);
+      const res = await client.query(
+        `INSERT INTO alcancia_grupo (grupo_id, nombre, meta, ahorrado, actualizado_en)
+         VALUES ($1, $2, $3, 0, NOW())
+         ON CONFLICT (grupo_id) DO UPDATE
+         SET nombre = EXCLUDED.nombre, meta = EXCLUDED.meta, actualizado_en = NOW()
+         RETURNING id, grupo_id AS "grupoId", nombre, meta::float, ahorrado::float, actualizado_en AS "actualizadoEn"`,
+        [grupoId, nombre, meta],
+      );
+      await this.registrarMovimiento(client, usuarioId, grupoId, null, 'alcancia_configurada', `Se actualizó la meta de la alcancía: ${nombre}.`);
+      return res.rows[0];
+    });
+  }
+
+  async aportarAlcancia(usuarioId: number, grupoId: number, monto: number, nota?: string): Promise<unknown> {
+    return this.enTransaccion(async (client) => {
+      await this.exigirMiembro(client, usuarioId, grupoId, true);
+      const alcanciaRes = await client.query(
+        `INSERT INTO alcancia_grupo (grupo_id, nombre, meta, ahorrado, actualizado_en)
+         VALUES ($1, 'Alcancía del grupo', 0, $2, NOW())
+         ON CONFLICT (grupo_id) DO UPDATE
+         SET ahorrado = alcancia_grupo.ahorrado + $2, actualizado_en = NOW()
+         RETURNING id, grupo_id AS "grupoId", nombre, meta::float, ahorrado::float`,
+        [grupoId, monto],
+      );
+      const alcancia = alcanciaRes.rows[0];
+      const aporteRes = await client.query(
+        `INSERT INTO aporte_alcancia (alcancia_id, usuario_id, monto, nota)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, usuario_id AS "usuarioId", monto::float, nota, fecha`,
+        [alcancia.id, usuarioId, monto, nota || null],
+      );
+      await this.registrarMovimiento(client, usuarioId, grupoId, null, 'aporte_alcancia', `Aporte a la alcancía por ${monto}.`);
+      return {
+        ...alcancia,
+        ultimoAporte: aporteRes.rows[0],
+      };
+    });
+  }
+
   private async exigirMiembro(
     client: Pool | PoolClient,
     usuarioId: number,

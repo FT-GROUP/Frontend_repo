@@ -32,4 +32,7 @@ export interface GrupoGastoRepository {
   obtenerResumen(usuarioId: number): Promise<unknown>;
   listarNotificaciones(usuarioId: number, limite: number): Promise<unknown[]>;
   marcarNotificacionLeida(usuarioId: number, notificacionId: number): Promise<void>;
+  obtenerAlcancia?(usuarioId: number, grupoId: number): Promise<unknown>;
+  configurarAlcancia?(usuarioId: number, grupoId: number, nombre: string, meta: number): Promise<unknown>;
+  aportarAlcancia?(usuarioId: number, grupoId: number, monto: number, nota?: string): Promise<unknown>;
 }

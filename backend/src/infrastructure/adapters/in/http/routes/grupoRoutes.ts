@@ -3,6 +3,8 @@ import { grupoGastoController } from '../../../../config/container';
 import { autenticar } from '../middlewares/authMiddleware';
 import { validarBody, validarParams } from '../middlewares/validate';
 import {
+  aportarAlcanciaSchema,
+  configurarAlcanciaSchema,
   crearGastoSchema,
   crearGrupoSchema,
   gastoParamsSchema,
@@ -23,6 +25,9 @@ router.get('/:grupoId/gastos', validarParams(grupoIdParamsSchema), grupoGastoCon
 router.post('/:grupoId/gastos', validarParams(grupoIdParamsSchema), validarBody(crearGastoSchema), grupoGastoController.crearGasto);
 router.get('/:grupoId/balances', validarParams(grupoIdParamsSchema), grupoGastoController.listarBalances);
 router.get('/:grupoId/historial', validarParams(grupoIdParamsSchema), grupoGastoController.listarHistorial);
+router.get('/:grupoId/alcancia', validarParams(grupoIdParamsSchema), grupoGastoController.obtenerAlcancia);
+router.put('/:grupoId/alcancia', validarParams(grupoIdParamsSchema), validarBody(configurarAlcanciaSchema), grupoGastoController.configurarAlcancia);
+router.post('/:grupoId/alcancia/aportes', validarParams(grupoIdParamsSchema), validarBody(aportarAlcanciaSchema), grupoGastoController.aportarAlcancia);
 router.post('/gastos/:gastoId/pagos', validarParams(gastoParamsSchema), grupoGastoController.registrarPago);
 
 export default router;

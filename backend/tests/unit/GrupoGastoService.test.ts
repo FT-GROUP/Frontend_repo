@@ -62,4 +62,29 @@ describe('GrupoGastoService', () => {
       ],
     }));
   });
+
+  it('valida y registra aportes y metas en la alcancía del grupo', async () => {
+    const repository = crearRepository();
+    repository.configurarAlcancia = jest.fn(async (_uid, grupoId, nombre, meta) => ({
+      grupoId,
+      nombre,
+      meta,
+      ahorrado: 0,
+    }));
+    repository.aportarAlcancia = jest.fn(async (_uid, grupoId, monto, nota) => ({
+      grupoId,
+      ahorrado: monto,
+      nota,
+    }));
+    const service = new GrupoGastoService(repository);
+
+    expect(() => service.aportarAlcancia(1, 4, 0)).toThrow(ValidacionError);
+    expect(() => service.configurarAlcancia(1, 4, 'Meta negativa', -100)).toThrow(ValidacionError);
+
+    const metaRes = await service.configurarAlcancia(1, 4, '  Fondo viaje  ', 500000);
+    expect(metaRes).toEqual({ grupoId: 4, nombre: 'Fondo viaje', meta: 500000, ahorrado: 0 });
+
+    const aporteRes = await service.aportarAlcancia(1, 4, 80000, '  Cuota 1  ');
+    expect(aporteRes).toEqual({ grupoId: 4, ahorrado: 80000, nota: 'Cuota 1' });
+  });
 });

@@ -1,12 +1,56 @@
-import { AccesoDenegadoError, ConflictoEstadoError, UsuarioNoEncontradoError } from '../../domain/errors/DomainErrors';
+import { AccesoDenegadoError, ConflictoEstadoError, GrupoNoEncontradoError, UsuarioNoEncontradoError } from '../../domain/errors/DomainErrors';
 import { EstadoUsuario, RolUsuario } from '../../domain/entities/Usuario';
-import { AdministracionRepository, UsuarioAdministracion } from '../../domain/ports/out/AdministracionRepository';
+import {
+  AdministracionRepository,
+  AgrupacionAdministracion,
+  GrupoAdministracion,
+  UsuarioAdministracion,
+} from '../../domain/ports/out/AdministracionRepository';
 
 export class AdministracionService {
   constructor(private readonly repository: AdministracionRepository) {}
 
   listarUsuarios(): Promise<UsuarioAdministracion[]> {
     return this.repository.listarUsuarios();
+  }
+
+  async listarGruposYAgrupaciones(): Promise<{ grupos: GrupoAdministracion[]; agrupaciones: AgrupacionAdministracion[] }> {
+    if (!this.repository.listarGruposYAgrupaciones) {
+      return { grupos: [], agrupaciones: [] };
+    }
+    return this.repository.listarGruposYAgrupaciones();
+  }
+
+  async crearAgrupacion(
+    actorId: number,
+    nombre: string,
+    descripcion?: string,
+    color?: string,
+    grupoIds?: number[],
+  ): Promise<AgrupacionAdministracion> {
+    if (!this.repository.crearAgrupacion) {
+      return {
+        id: Date.now(),
+        nombre: nombre.trim(),
+        descripcion: descripcion?.trim() || null,
+        color: color || '#1f9d63',
+        totalGrupos: grupoIds?.length ?? 0,
+        fechaCreacion: new Date(),
+      };
+    }
+    return this.repository.crearAgrupacion(actorId, nombre.trim(), descripcion?.trim(), color, grupoIds);
+  }
+
+  async actualizarGrupoAdministracion(
+    grupoId: number,
+    datos: { agrupacionId?: number | null; estado?: 'activo' | 'archivado' },
+  ): Promise<GrupoAdministracion> {
+    if (!this.repository.actualizarGrupoAdministracion) {
+      throw new GrupoNoEncontradoError(grupoId);
+    }
+    const actualizado = await this.repository.actualizarGrupoAdministracion(grupoId, datos);
+    if (!actualizado) throw new GrupoNoEncontradoError(grupoId);
+    return actualizado;
   }
 
   async cambiarEstado(

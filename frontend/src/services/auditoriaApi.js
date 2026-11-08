@@ -1,4 +1,4 @@
-import { request } from './http'
+import { request } from './http.js'
 
 const DEMO_EVENTOS = [
   { id: '1', fecha: new Date(Date.now() - 60000).toISOString(), actorEmail: 'supervisor@ftgroup.test', actorRol: 'supervisor', accion: 'GET /api/auditoria/', metodo: 'GET', ruta: '/api/auditoria/', estadoHttp: 200, motivo: 'Consultar registro de auditoría' },

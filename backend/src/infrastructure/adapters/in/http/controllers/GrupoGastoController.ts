@@ -1,7 +1,7 @@
 import { NextFunction, Response } from 'express';
 import { GrupoGastoService, RegistrarGastoComando } from '../../../../../application/services/GrupoGastoService';
 import { RequestAutenticado } from '../middlewares/authMiddleware';
-import { CrearGastoInput, CrearGrupoInput } from '../validators/grupoValidators';
+import { AportarAlcanciaInput, ConfigurarAlcanciaInput, CrearGastoInput, CrearGrupoInput } from '../validators/grupoValidators';
 
 export class GrupoGastoController {
   constructor(private readonly service: GrupoGastoService) {}
@@ -115,6 +115,43 @@ export class GrupoGastoController {
     try {
       await this.service.marcarNotificacionLeida(req.usuario!.id, Number(req.params.notificacionId));
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  obtenerAlcancia = async (req: RequestAutenticado, res: Response, next: NextFunction) => {
+    try {
+      const alcancia = await this.service.obtenerAlcancia(req.usuario!.id, Number(req.params.grupoId));
+      res.status(200).json({ alcancia });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  configurarAlcancia = async (req: RequestAutenticado & { body: ConfigurarAlcanciaInput }, res: Response, next: NextFunction) => {
+    try {
+      const alcancia = await this.service.configurarAlcancia(
+        req.usuario!.id,
+        Number(req.params.grupoId),
+        req.body.nombre,
+        req.body.meta,
+      );
+      res.status(200).json({ alcancia });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  aportarAlcancia = async (req: RequestAutenticado & { body: AportarAlcanciaInput }, res: Response, next: NextFunction) => {
+    try {
+      const alcancia = await this.service.aportarAlcancia(
+        req.usuario!.id,
+        Number(req.params.grupoId),
+        req.body.monto,
+        req.body.nota,
+      );
+      res.status(201).json({ alcancia });
     } catch (error) {
       next(error);
     }

@@ -91,4 +91,27 @@ export class GrupoGastoService {
   marcarNotificacionLeida(usuarioId: number, notificacionId: number) {
     return this.repository.marcarNotificacionLeida(usuarioId, notificacionId);
   }
+
+  obtenerAlcancia(usuarioId: number, grupoId: number) {
+    if (!this.repository.obtenerAlcancia) {
+      return Promise.resolve({ grupoId, nombre: 'Alcancía del grupo', meta: 0, ahorrado: 0, aportes: [] });
+    }
+    return this.repository.obtenerAlcancia(usuarioId, grupoId);
+  }
+
+  configurarAlcancia(usuarioId: number, grupoId: number, nombre: string, meta: number) {
+    if (meta < 0) throw new ValidacionError('La meta de ahorro no puede ser negativa.');
+    if (!this.repository.configurarAlcancia) {
+      return Promise.resolve({ grupoId, nombre: nombre.trim(), meta, ahorrado: 0 });
+    }
+    return this.repository.configurarAlcancia(usuarioId, grupoId, nombre.trim(), meta);
+  }
+
+  aportarAlcancia(usuarioId: number, grupoId: number, monto: number, nota?: string) {
+    if (monto <= 0) throw new ValidacionError('El aporte a la alcancía debe ser mayor a cero.');
+    if (!this.repository.aportarAlcancia) {
+      return Promise.resolve({ grupoId, monto, nota: nota?.trim() || null });
+    }
+    return this.repository.aportarAlcancia(usuarioId, grupoId, monto, nota?.trim());
+  }
 }

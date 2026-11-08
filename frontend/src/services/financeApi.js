@@ -6,14 +6,14 @@
 // Modo "local" (VITE_FINANCE_MODE=local): demostración sin backend; guarda
 // los datos en el navegador con la misma estructura de tablas.
 
-import { request } from './http'
-import { splitEqual, pendingDebts, netBalances, pairwise } from '../utils/balances'
-import { today } from '../utils/format'
-import { arrayFromResponse } from '../utils/apiResponse'
-import { usesLocalFinance as shouldUseLocalFinance } from '../utils/demoAccount'
-import { auditoriaApi } from './auditoriaApi'
+import { request } from './http.js'
+import { splitEqual, pendingDebts, netBalances, pairwise } from '../utils/balances.js'
+import { today } from '../utils/format.js'
+import { arrayFromResponse } from '../utils/apiResponse.js'
+import { usesLocalFinance as shouldUseLocalFinance } from '../utils/demoAccount.js'
+import { auditoriaApi } from './auditoriaApi.js'
 
-const MODE = import.meta.env.VITE_FINANCE_MODE || 'api'
+const MODE = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FINANCE_MODE) || 'api'
 const delay = (ms = 150) => new Promise(r => setTimeout(r, ms))
 
 /* ------------------------------------------------------------------ */
@@ -26,14 +26,58 @@ function emptyState(user) {
   return {
     usuarios: [{ id: String(user.id), nombre: user.nombre, email: user.email }],
     grupos: [], miembros: [], gastos: [], divisiones: [], historial: [], recibos: [],
+    alcancias: [], aportes_alcancia: [], agrupaciones: [],
   }
 }
 
+function hydrateExtendedState(st, user) {
+  const me = String(user.id)
+  if (!Array.isArray(st.agrupaciones) || (st.demo && st.agrupaciones.length === 0)) {
+    st.agrupaciones = [
+      { id: 'ag-hogar', nombre: 'Vivienda y Hogar', descripcion: 'Gastos fijos residenciales y servicios', color: '#1f9d63' },
+      { id: 'ag-viajes', nombre: 'Viajes y Salidas', descripcion: 'Excursiones, vacaciones y recreación', color: '#0284c7' },
+      { id: 'ag-trabajo', nombre: 'Operación y Equipos', descripcion: 'Cajas menores y proyectos laborales', color: '#7c3aed' },
+    ]
+  }
+  const mapAgrupacion = { 'g-apto': 'ag-hogar', 'g-viaje': 'ag-viajes', 'g-caja': 'ag-trabajo' }
+  for (const g of st.grupos || []) {
+    if (g.agrupacion_id === undefined && mapAgrupacion[g.id]) {
+      g.agrupacion_id = mapAgrupacion[g.id]
+    }
+  }
+  if (!Array.isArray(st.alcancias)) st.alcancias = []
+  if (!Array.isArray(st.aportes_alcancia)) st.aportes_alcancia = []
+  if (st.demo && st.alcancias.length === 0 && (st.grupos || []).some(g => g.id === 'g-apto')) {
+    const hoy = today()
+    st.alcancias.push(
+      { grupo_id: 'g-apto', nombre: 'Fondo de imprevistos y mejoras', meta: 600000, ahorrado: 380000 },
+      { grupo_id: 'g-viaje', nombre: 'Tour Islas del Rosario y lancha', meta: 900000, ahorrado: 650000 },
+      { grupo_id: 'g-caja', nombre: 'Reserva cafetera y equipos', meta: 400000, ahorrado: 220000 },
+    )
+    st.aportes_alcancia.push(
+      { id: 'ap-1', grupo_id: 'g-apto', usuario_id: me, monto: 150000, nota: 'Aporte inicial fondo hogar', fecha: hoy },
+      { id: 'ap-2', grupo_id: 'g-apto', usuario_id: 'u-johan', monto: 130000, nota: 'Cuota mantenimiento', fecha: hoy },
+      { id: 'ap-3', grupo_id: 'g-apto', usuario_id: 'u-sanny', monto: 100000, nota: 'Reserva reparaciones', fecha: hoy },
+      { id: 'ap-4', grupo_id: 'g-viaje', usuario_id: me, monto: 250000, nota: 'Reserva lancha privada', fecha: hoy },
+      { id: 'ap-5', grupo_id: 'g-viaje', usuario_id: 'u-johan', monto: 200000, nota: 'Aporte excursión islas', fecha: hoy },
+      { id: 'ap-6', grupo_id: 'g-viaje', usuario_id: 'u-sanny', monto: 200000, nota: 'Aporte excursión islas', fecha: hoy },
+      { id: 'ap-7', grupo_id: 'g-caja', usuario_id: me, monto: 120000, nota: 'Fondo insumos trimestral', fecha: hoy },
+      { id: 'ap-8', grupo_id: 'g-caja', usuario_id: 'u-maria', monto: 100000, nota: 'Aporte caja ahorro oficina', fecha: hoy },
+    )
+  }
+  return st
+}
+
+const memoryStore = new Map()
+
 function load(user) {
+  const key = storeKey(user.id)
   try {
-    const raw = localStorage.getItem(storeKey(user.id))
+    const raw = typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function'
+      ? localStorage.getItem(key)
+      : memoryStore.get(key)
     if (raw) {
-      const st = JSON.parse(raw)
+      const st = hydrateExtendedState(JSON.parse(raw), user)
       // Mantener sincronizado el nombre del usuario autenticado.
       const me = st.usuarios.find(u => u.id === String(user.id))
       if (me) me.nombre = user.nombre
@@ -45,7 +89,14 @@ function load(user) {
   return st
 }
 function save(user, st) {
-  try { localStorage.setItem(storeKey(user.id), JSON.stringify(st)) } catch { /* sin almacenamiento */ }
+  const key = storeKey(user.id)
+  const serialized = JSON.stringify(st)
+  memoryStore.set(key, serialized)
+  try {
+    if (typeof localStorage !== 'undefined' && typeof localStorage.setItem === 'function') {
+      localStorage.setItem(key, serialized)
+    }
+  } catch { /* sin almacenamiento */ }
 }
 
 function addHistorial(st, me, grupo_id, tipo_movimiento, descripcion, gasto_id = null) {
@@ -102,7 +153,7 @@ function demoState(user) {
     }
   })
   st.demo = true
-  return st
+  return hydrateExtendedState(st, user)
 }
 
 /* ------------------------------------------------------------------ */
@@ -111,20 +162,47 @@ function demoState(user) {
 function viewGroups(st, me) {
   const misGrupos = st.grupos.filter(g => g.estado === 'activo' && st.miembros.some(m => m.grupo_id === g.id && m.usuario_id === me && m.estado === 'activo'))
   const debts = pendingDebts(st.gastos, st.divisiones)
+  const usuarios = new Map(st.usuarios.map(u => [u.id, u]))
+  const agrupaciones = new Map((st.agrupaciones || []).map(a => [a.id, a]))
   return misGrupos.map(g => {
     const miembros = st.miembros.filter(m => m.grupo_id === g.id && m.estado === 'activo')
       .map(m => ({ ...st.usuarios.find(u => u.id === m.usuario_id), rol: m.rol }))
     const gastos = st.gastos.filter(x => x.grupo_id === g.id)
     const deudasGrupo = debts.filter(x => x.grupo_id === g.id)
     const net = netBalances(deudasGrupo)
+    const alcRaw = (st.alcancias || []).find(a => a.grupo_id === g.id) || {
+      grupo_id: g.id,
+      nombre: `Alcancía ${g.nombre}`,
+      meta: 0,
+      ahorrado: 0,
+    }
+    const aportes = (st.aportes_alcancia || [])
+      .filter(ap => ap.grupo_id === g.id)
+      .map(ap => ({
+        ...ap,
+        usuario: usuarios.get(ap.usuario_id)?.nombre || 'Integrante',
+      }))
+      .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
+    const ahorrado = Number(alcRaw.ahorrado || 0)
+    const meta = Number(alcRaw.meta || 0)
+    const progreso = meta > 0 ? Math.min(100, Math.round((ahorrado / meta) * 100)) : (ahorrado > 0 ? 100 : 0)
+    const agrupacion = g.agrupacion_id ? agrupaciones.get(g.agrupacion_id) || null : null
     return {
       ...g,
+      agrupacion,
       miembros,
       rol: miembros.find(m => m.id === me)?.rol,
       total_gastos: gastos.reduce((s, x) => s + x.monto_total, 0),
       num_gastos: gastos.length,
       mi_balance: Math.round(net[me] || 0),
       liquidaciones: pairwise(deudasGrupo),
+      alcancia: {
+        nombre: alcRaw.nombre || `Alcancía ${g.nombre}`,
+        meta,
+        ahorrado,
+        progreso,
+        aportes,
+      },
     }
   })
 }
@@ -292,6 +370,52 @@ const local = {
     save(user, st)
   },
 
+  /** Configura el nombre y la meta de ahorro de la alcancía compartida de un grupo. */
+  async configureAlcancia(user, grupoId, { nombre, meta }) {
+    await delay()
+    const st = load(user), me = String(user.id)
+    const metaNum = Math.max(0, Math.round(Number(meta) || 0))
+    const cleanName = (nombre || '').trim() || 'Alcancía del grupo'
+    let alc = st.alcancias.find(a => a.grupo_id === grupoId)
+    if (!alc) {
+      alc = { grupo_id: grupoId, nombre: cleanName, meta: metaNum, ahorrado: 0 }
+      st.alcancias.push(alc)
+    } else {
+      alc.nombre = cleanName
+      alc.meta = metaNum
+    }
+    addHistorial(st, me, grupoId, 'alcancia_configurada', `Meta de alcancía actualizada: ${cleanName}`)
+    save(user, st)
+    return viewGroups(st, me).find(g => g.id === grupoId)?.alcancia
+  },
+
+  /** Registra un nuevo aporte monetario en la alcancía del grupo. */
+  async contributeAlcancia(user, grupoId, { monto, nota }) {
+    await delay()
+    const st = load(user), me = String(user.id)
+    const valor = Math.round(Number(monto) || 0)
+    if (!(valor > 0)) throw new Error('El aporte debe ser mayor que cero.')
+    let alc = st.alcancias.find(a => a.grupo_id === grupoId)
+    if (!alc) {
+      const grp = st.grupos.find(g => g.id === grupoId)
+      alc = { grupo_id: grupoId, nombre: `Alcancía ${grp?.nombre || ''}`.trim(), meta: valor * 2, ahorrado: 0 }
+      st.alcancias.push(alc)
+    }
+    alc.ahorrado = Number(alc.ahorrado || 0) + valor
+    const ap = {
+      id: uidGen('ap-'),
+      grupo_id: grupoId,
+      usuario_id: me,
+      monto: valor,
+      nota: nota?.trim() || 'Aporte voluntario',
+      fecha: today(),
+    }
+    st.aportes_alcancia.unshift(ap)
+    addHistorial(st, me, grupoId, 'aporte_alcancia', `Aporte a alcancía (${alc.nombre}): ${ap.nota}`)
+    save(user, st)
+    return viewGroups(st, me).find(g => g.id === grupoId)?.alcancia
+  },
+
   async resetDemo(user, { empty = false } = {}) {
     const st = empty ? emptyState(user) : demoState(user)
     save(user, st)
@@ -324,6 +448,10 @@ const remote = {
   payShare: (u, gastoId, usuarioId = String(u.id)) =>
     request(`/gastos/${gastoId}/pagar`, { method: 'POST', auth: true, body: { usuario_id: usuarioId } }),
   settle: (_u, body) => request('/balances/liquidar', { method: 'POST', auth: true, body }),
+  configureAlcancia: (_u, grupoId, body) =>
+    request(`/grupos/${grupoId}/alcancia`, { method: 'PUT', auth: true, body }),
+  contributeAlcancia: (_u, grupoId, body) =>
+    request(`/grupos/${grupoId}/alcancia/aportes`, { method: 'POST', auth: true, body }),
   resetDemo: async () => {},
 }
 
@@ -339,6 +467,8 @@ const ACCIONES_AUDITADAS = {
   deleteExpense: 'gasto_eliminar',
   payShare: 'pago_registrar',
   settle: 'liquidacion_registrar',
+  configureAlcancia: 'alcancia_configurar',
+  contributeAlcancia: 'alcancia_aportar',
 }
 
 const localConAuditoria = new Proxy(local, {
@@ -389,6 +519,8 @@ export const financeApi = {
   deleteExpense: withFallback(remote.deleteExpense, localConAuditoria.deleteExpense),
   payShare: withFallback(remote.payShare, localConAuditoria.payShare),
   settle: withFallback(remote.settle, localConAuditoria.settle),
+  configureAlcancia: withFallback(remote.configureAlcancia, localConAuditoria.configureAlcancia),
+  contributeAlcancia: withFallback(remote.contributeAlcancia, localConAuditoria.contributeAlcancia),
   resetDemo: localConAuditoria.resetDemo,
 }
 

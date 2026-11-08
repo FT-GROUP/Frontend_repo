@@ -84,4 +84,11 @@ describe('AdministracionService', () => {
     await expect(service.cambiarRol(1, 'moderador', 2, 'supervisor')).rejects.toBeInstanceOf(AccesoDenegadoError);
     expect(repository.cambiarRol).not.toHaveBeenCalled();
   });
+
+  it('permite crear y consultar grupos de grupos (agrupaciones maestras)', async () => {
+    const { service } = crearServicio([crearUsuario(1, 'supervisor')]);
+    const agrupacion = await service.crearAgrupacion(1, '  Hogar y Vivienda  ', 'Clúster residencial', '#1f9d63', [1, 2]);
+    expect(agrupacion.nombre).toBe('Hogar y Vivienda');
+    expect(agrupacion.totalGrupos).toBe(2);
+  });
 });

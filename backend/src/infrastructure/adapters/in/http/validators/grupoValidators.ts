@@ -46,5 +46,17 @@ export const crearGastoSchema = z.discriminatedUnion('tipoDivision', [
   }),
 ]);
 
+export const configurarAlcanciaSchema = z.object({
+  nombre: z.string().trim().min(2).max(120),
+  meta: z.number().min(0, 'La meta no puede ser negativa.'),
+});
+
+export const aportarAlcanciaSchema = z.object({
+  monto: montoPositivo,
+  nota: z.string().trim().max(255).optional(),
+});
+
 export type CrearGrupoInput = z.infer<typeof crearGrupoSchema>;
 export type CrearGastoInput = z.infer<typeof crearGastoSchema>;
+export type ConfigurarAlcanciaInput = z.infer<typeof configurarAlcanciaSchema>;
+export type AportarAlcanciaInput = z.infer<typeof aportarAlcanciaSchema>;

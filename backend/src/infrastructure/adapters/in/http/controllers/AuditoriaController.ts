@@ -22,6 +22,10 @@ export class AuditoriaController {
     gasto_eliminar: 'Eliminar un gasto financiero de demostración.',
     pago_registrar: 'Registrar un pago o una liquidación de demostración.',
     liquidacion_registrar: 'Registrar un pago o una liquidación de demostración.',
+    alcancia_configurar: 'Configurar meta de ahorro de la alcancía del grupo.',
+    alcancia_aportar: 'Registrar un aporte de ahorro en la alcancía del grupo.',
+    agrupacion_crear: 'Crear una agrupación o grupo de grupos en administración.',
+    grupo_agrupar: 'Asignar un grupo a una agrupación maestra en administración.',
     datos_demo_restaurar: 'Restaurar los datos financieros de demostración.',
     datos_demo_borrar: 'Borrar los datos financieros de demostración.',
   };

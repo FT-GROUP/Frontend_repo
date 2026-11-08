@@ -1,6 +1,11 @@
 import { Pool } from 'pg';
 import { EstadoUsuario, RolUsuario } from '../../../../../domain/entities/Usuario';
-import { AdministracionRepository, UsuarioAdministracion } from '../../../../../domain/ports/out/AdministracionRepository';
+import {
+  AdministracionRepository,
+  AgrupacionAdministracion,
+  GrupoAdministracion,
+  UsuarioAdministracion,
+} from '../../../../../domain/ports/out/AdministracionRepository';
 
 interface FilaUsuarioAdministracion {
   id: number;
@@ -141,6 +146,111 @@ export class PostgresAdministracionRepository implements AdministracionRepositor
       [rol, id],
     );
     return resultado.rows[0] ? this.aUsuario(resultado.rows[0]) : null;
+  }
+
+  async listarGruposYAgrupaciones(): Promise<{ grupos: GrupoAdministracion[]; agrupaciones: AgrupacionAdministracion[] }> {
+    const agrupacionesRes = await this.poolActivos.query(
+      `SELECT ag.id, ag.nombre, ag.descripcion, ag.color, ag.fecha_creacion,
+              COUNT(g.id)::int AS total_grupos
+       FROM agrupacion_grupo ag
+       LEFT JOIN grupo g ON g.agrupacion_id = ag.id
+       GROUP BY ag.id
+       ORDER BY ag.fecha_creacion DESC, ag.id DESC`,
+    ).catch(() => ({ rows: [] }));
+
+    const gruposRes = await this.poolActivos.query(
+      `SELECT g.id, g.nombre, g.descripcion, g.estado, g.agrupacion_id,
+              ag.nombre AS agrupacion_nombre,
+              COALESCE(u.nombre, 'Sistema') AS creador_nombre,
+              COUNT(DISTINCT m.id) FILTER (WHERE m.estado = 'activo')::int AS miembros_activos,
+              COALESCE(SUM(DISTINCT ga.monto_total), 0)::float AS total_gastos,
+              COALESCE(al.ahorrado, 0)::float AS ahorrado_alcancia,
+              COALESCE(al.meta, 0)::float AS meta_alcancia,
+              g.fecha_creacion
+       FROM grupo g
+       LEFT JOIN agrupacion_grupo ag ON ag.id = g.agrupacion_id
+       LEFT JOIN usuario u ON u.id = g.creado_por
+       LEFT JOIN miembro_grupo m ON m.grupo_id = g.id
+       LEFT JOIN gasto ga ON ga.grupo_id = g.id
+       LEFT JOIN alcancia_grupo al ON al.grupo_id = g.id
+       GROUP BY g.id, ag.nombre, u.nombre, al.ahorrado, al.meta
+       ORDER BY g.fecha_creacion DESC, g.id DESC`,
+    ).catch(() => ({ rows: [] }));
+
+    return {
+      agrupaciones: agrupacionesRes.rows.map((r) => ({
+        id: r.id,
+        nombre: r.nombre,
+        descripcion: r.descripcion,
+        color: r.color || '#1f9d63',
+        totalGrupos: r.total_grupos,
+        fechaCreacion: new Date(r.fecha_creacion),
+      })),
+      grupos: gruposRes.rows.map((r) => ({
+        id: r.id,
+        nombre: r.nombre,
+        descripcion: r.descripcion,
+        estado: r.estado,
+        agrupacionId: r.agrupacion_id ?? null,
+        agrupacionNombre: r.agrupacion_nombre ?? null,
+        creadorNombre: r.creador_nombre,
+        miembrosActivos: r.miembros_activos,
+        totalGastos: Number(r.total_gastos || 0),
+        ahorradoAlcancia: Number(r.ahorrado_alcancia || 0),
+        metaAlcancia: Number(r.meta_alcancia || 0),
+        fechaCreacion: new Date(r.fecha_creacion),
+      })),
+    };
+  }
+
+  async crearAgrupacion(
+    actorId: number,
+    nombre: string,
+    descripcion?: string,
+    color = '#1f9d63',
+    grupoIds: number[] = [],
+  ): Promise<AgrupacionAdministracion> {
+    const res = await this.poolActivos.query(
+      `INSERT INTO agrupacion_grupo (nombre, descripcion, color, creado_por)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, nombre, descripcion, color, fecha_creacion`,
+      [nombre, descripcion || null, color, actorId],
+    );
+    const ag = res.rows[0];
+    if (grupoIds.length > 0) {
+      await this.poolActivos.query(
+        `UPDATE grupo SET agrupacion_id = $1 WHERE id = ANY($2::bigint[])`,
+        [ag.id, grupoIds],
+      );
+    }
+    return {
+      id: ag.id,
+      nombre: ag.nombre,
+      descripcion: ag.descripcion,
+      color: ag.color,
+      totalGrupos: grupoIds.length,
+      fechaCreacion: new Date(ag.fecha_creacion),
+    };
+  }
+
+  async actualizarGrupoAdministracion(
+    grupoId: number,
+    datos: { agrupacionId?: number | null; estado?: 'activo' | 'archivado' },
+  ): Promise<GrupoAdministracion | null> {
+    if (datos.agrupacionId !== undefined) {
+      await this.poolActivos.query(
+        `UPDATE grupo SET agrupacion_id = $1 WHERE id = $2`,
+        [datos.agrupacionId, grupoId],
+      );
+    }
+    if (datos.estado !== undefined) {
+      await this.poolActivos.query(
+        `UPDATE grupo SET estado = $1 WHERE id = $2`,
+        [datos.estado, grupoId],
+      );
+    }
+    const { grupos } = await this.listarGruposYAgrupaciones();
+    return grupos.find((g) => Number(g.id) === Number(grupoId)) ?? null;
   }
 
   private aUsuario(fila: FilaUsuarioAdministracion): UsuarioAdministracion {
