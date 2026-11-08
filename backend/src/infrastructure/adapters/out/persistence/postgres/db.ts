@@ -1,7 +1,29 @@
-import { Pool, PoolConfig, types } from 'pg';
+import { ClientBase, Pool, PoolConfig, types } from 'pg';
 import { env } from '../../../../config/env';
 
 types.setTypeParser(20, (valor: string) => parseInt(valor, 10));
+
+/** Tiempo maximo de una consulta: evita que una sentencia lenta acapare una conexion. */
+const LIMITE_CONSULTA_MS = 3_000;
+
+/**
+ * Se aplica con SET al abrir cada conexion, y no como parametro de inicio del
+ * pool, porque los poolers en modo transaccion (p. ej. Neon) rechazan
+ * statement_timeout como parametro de inicio y la conexion fallaria.
+ */
+async function fijarLimiteDeConsulta(client: ClientBase): Promise<void> {
+  try {
+    await client.query(`SET statement_timeout = ${LIMITE_CONSULTA_MS}`);
+  } catch (err) {
+    const code = err instanceof Error && 'code' in err ? err.code : undefined;
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      type: 'database_statement_timeout_error',
+      code,
+    }));
+  }
+}
 
 function crearConfiguracionPool(urlOpcional?: string): PoolConfig {
   if (urlOpcional) {
@@ -11,6 +33,7 @@ function crearConfiguracionPool(urlOpcional?: string): PoolConfig {
       max: env.databasePoolMax,
       connectionTimeoutMillis: 5_000,
       idleTimeoutMillis: 5_000,
+      onConnect: fijarLimiteDeConsulta,
     };
   }
   return {
@@ -23,6 +46,7 @@ function crearConfiguracionPool(urlOpcional?: string): PoolConfig {
     max: env.databasePoolMax,
     connectionTimeoutMillis: 5_000,
     idleTimeoutMillis: 5_000,
+    onConnect: fijarLimiteDeConsulta,
   };
 }
 

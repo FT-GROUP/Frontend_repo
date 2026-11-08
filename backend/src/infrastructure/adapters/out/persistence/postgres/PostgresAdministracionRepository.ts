@@ -32,7 +32,7 @@ export class PostgresAdministracionRepository implements AdministracionRepositor
     const activosPromise = this.poolActivos.query<FilaUsuarioAdministracion>(
       `SELECT id, nombre, email, estado, rol, fecha_registro 
        FROM usuario 
-       WHERE estado = 'activo'
+       WHERE estado IN ('activo', 'bloqueado')
        ORDER BY fecha_registro DESC, id DESC`,
     );
 
@@ -127,14 +127,14 @@ export class PostgresAdministracionRepository implements AdministracionRepositor
       );
       return res.rows[0] ? this.aUsuario(res.rows[0]) : null;
     } else {
-      // REACTIVACIÓN: Retirar de base inactiva y habilitar en base activa
+      // ACTIVO o BLOQUEADO: la cuenta deja la base inactiva y conserva el estado solicitado
       try {
         await this.poolHistorico.query(`DELETE FROM historico.usuario_inactivo WHERE id = $1`, [id]);
       } catch {}
 
       const res = await this.poolActivos.query<FilaUsuarioAdministracion>(
-        `UPDATE usuario SET estado = 'activo' WHERE id = $1 RETURNING id, nombre, email, estado, rol, fecha_registro`,
-        [id],
+        `UPDATE usuario SET estado = $1 WHERE id = $2 RETURNING id, nombre, email, estado, rol, fecha_registro`,
+        [estado, id],
       );
       return res.rows[0] ? this.aUsuario(res.rows[0]) : null;
     }

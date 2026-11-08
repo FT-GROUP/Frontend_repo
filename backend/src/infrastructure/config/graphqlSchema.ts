@@ -94,6 +94,9 @@ const RootQuery = new GraphQLObjectType({
       },
       resolve: async (_parent, args, context) => {
         if (!context?.usuario) throw new Error('No autenticado para consultar usuarios.');
+        if (!['moderador', 'supervisor'].includes(context.usuario.rol)) {
+          throw new Error('No autorizado para consultar usuarios.');
+        }
         
         // Si pide activos exclusivamente, consultamos solo el pool de activos
         if (args.estado === 'activo') {
@@ -203,6 +206,16 @@ const RootMutation = new GraphQLObjectType({
       resolve: async (_parent, args, context) => {
         if (!context?.usuario) throw new Error('No autorizado.');
         const id = parseInt(args.grupoId, 10);
+
+        // Personal de la plataforma o administrador activo de ese grupo.
+        if (!['moderador', 'supervisor'].includes(context.usuario.rol)) {
+          const administrador = await pool.query(
+            `SELECT 1 FROM miembro_grupo
+             WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'activo' AND rol = 'administrador'`,
+            [id, context.usuario.id]
+          );
+          if (administrador.rowCount === 0) throw new Error('No autorizado.');
+        }
 
         // 1. Obtener datos del grupo activo
         const grupoRes = await pool.query(`SELECT * FROM grupo WHERE id = $1`, [id]);

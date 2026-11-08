@@ -24,6 +24,8 @@ async function ejecutarMigraciones(): Promise<void> {
 
   const client = await pool.connect();
   try {
+    // Una migracion puede tardar mas que el limite de las consultas normales.
+    await client.query('SET statement_timeout = 0');
     for (const archivo of archivos) {
       const rutaCompleta = path.join(carpetaMigraciones, archivo);
       const sql = fs.readFileSync(rutaCompleta, 'utf-8');
