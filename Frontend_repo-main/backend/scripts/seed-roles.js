@@ -28,20 +28,45 @@ const usuarios = [
     email: 'moderador@ftgroup.test',
     password: 'Moderador2026!',
     rol: 'moderador',
+    ftScore: 850,
+    nivel: 'Oro',
   },
   {
     nombre: 'Supervisor de prueba',
     email: 'supervisor@ftgroup.test',
     password: 'Supervisor2026!',
     rol: 'supervisor',
+    ftScore: 920,
+    nivel: 'Diamante',
   },
   {
     nombre: 'Usuario común de prueba',
     email: 'usuario@ftgroup.test',
     password: 'Usuario2026!',
     rol: 'usuario',
+    ftScore: 780,
+    nivel: 'Plata',
   },
 ]
+
+// FT-Score inicial de la cuenta de prueba (tabla creada por la migración 011).
+// Si todavía no se ha migrado, se omite sin detener el seed.
+async function asignarFtScore(usuarioId, ftScore, nivel) {
+  try {
+    await pool.query(
+      `INSERT INTO usuario_ft_score (usuario_id, ft_score, nivel)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (usuario_id) DO UPDATE SET ft_score = EXCLUDED.ft_score, nivel = EXCLUDED.nivel`,
+      [usuarioId, ftScore, nivel],
+    )
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === '42P01') {
+      console.warn('Tabla usuario_ft_score no existe: ejecuta las migraciones para asignar el FT-Score.')
+      return
+    }
+    throw error
+  }
+}
 
 async function crearUsuariosDePrueba() {
   try {
@@ -52,16 +77,18 @@ async function crearUsuariosDePrueba() {
         timeCost: 2,
         parallelism: 1,
       })
-      await pool.query(
+      const { rows } = await pool.query(
         `INSERT INTO usuario (nombre, email, password_hash, estado, rol)
          VALUES ($1, $2, $3, 'activo', $4)
          ON CONFLICT (email) DO UPDATE SET
            nombre = EXCLUDED.nombre,
            password_hash = EXCLUDED.password_hash,
            estado = 'activo',
-           rol = EXCLUDED.rol`,
+           rol = EXCLUDED.rol
+         RETURNING id`,
         [usuario.nombre, usuario.email, passwordHash, usuario.rol],
       )
+      await asignarFtScore(rows[0].id, usuario.ftScore, usuario.nivel)
       console.log(`Cuenta ${usuario.rol} lista: ${usuario.email}`)
     }
     console.log('Las cuentas de prueba quedaron listas.')
