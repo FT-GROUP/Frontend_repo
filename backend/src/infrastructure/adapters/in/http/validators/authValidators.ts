@@ -21,16 +21,25 @@ export const registrarUsuarioSchema = z.object({
     .toLowerCase()
     .email('El correo electronico no tiene un formato valido.')
     .max(150),
+  // La contrasena no se recorta ni se normaliza: se guarda tal cual la
+  // escribe la persona. Por eso se rechazan los espacios en el registro,
+  // en lugar de quitarlos: si se recortaran, el usuario tendria que
+  // adivinar despues cual es su contrasena real al iniciar sesion.
   password: z
     .string({ required_error: 'La contrasena es obligatoria.' })
     .min(8, 'La contrasena debe tener al menos 8 caracteres.')
-    .max(72, 'La contrasena no puede superar los 72 caracteres.'),
+    .max(72, 'La contrasena no puede superar los 72 caracteres.')
+    .regex(/^\S+$/, 'La contrasena no puede contener espacios.'),
   telefono: z.string().trim().max(20).optional(),
 });
 
 /* ------------------------------------------------------------------ */
 /* Iniciar sesion                                                      */
 /* ------------------------------------------------------------------ */
+// El inicio de sesion NO exige el formato del registro a proposito: las
+// cuentas creadas antes de esta regla pueden tener espacios en su
+// contrasena, y rechazarlas aqui las dejaria fuera del sistema. Una
+// contrasena invalida simplemente no coincide y falla la autenticacion.
 export const iniciarSesionSchema = z.object({
   email: z
     .string({ required_error: 'El correo es obligatorio.' })
@@ -100,4 +109,4 @@ export type IniciarSesionInput = z.infer<typeof iniciarSesionSchema>;
 export type RefrescarTokenInput = z.infer<typeof refrescarTokenSchema>;
 export type ActualizarPerfilInput = z.infer<typeof actualizarPerfilSchema>;
 export type CambiarEstadoUsuarioInput = z.infer<typeof cambiarEstadoUsuarioSchema>;
-export type IdUsuarioInput = z.infer<typeof idUsuarioSchema>;
+export type IdUsuarioInput = z.infer<typeof idUsuarioSchema>;

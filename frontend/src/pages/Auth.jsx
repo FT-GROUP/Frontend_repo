@@ -96,6 +96,8 @@ export function Register() {
 
   const submit = async e => {
     e.preventDefault(); setError('')
+    // El backend aplica la misma regla; esto solo evita el viaje al servidor.
+    if (/\s/.test(form.password)) return setError('La contraseña no puede contener espacios.')
     if (form.password !== form.confirm) return setError('Las contraseñas no coinciden.')
     setSending(true)
     try {
