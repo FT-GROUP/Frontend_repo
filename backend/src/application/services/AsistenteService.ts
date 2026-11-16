@@ -18,8 +18,9 @@ const MENSAJES_DE_HISTORIAL = 12;
  */
 const MAX_VUELTAS = 4;
 
+// Trata al usuario de usted, igual que el prompt del agente.
 const RESPUESTA_POR_DEFECTO =
-  'No logre resolverlo por aqui. ¿Puedes contarme con un poco mas de detalle que ocurre y en que pantalla?';
+  'No logre resolverlo por aqui. ¿Podria indicarme con mas detalle que ocurre y en que pantalla?';
 
 /**
  * El chat muestra texto plano, asi que el Markdown se veria literal

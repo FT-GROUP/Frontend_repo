@@ -49,6 +49,20 @@ describe('construirPromptSoporte', () => {
     expect(prompt).toContain('MANUAL DE USUARIO');
   });
 
+  it('prohibe preguntar "en que pantalla" a quien no es tecnico', () => {
+    expect(prompt).toContain('Nunca pregunte');
+    expect(prompt).toContain('¿en que pantalla?');
+  });
+
+  it('obliga a abrir el ticket aunque el usuario no sepa precisar donde ocurre', () => {
+    expect(prompt).toContain('NO insista ni repita la pregunta');
+    expect(prompt).toContain('Pregunte como maximo DOS veces');
+  });
+
+  it('exige tratar al usuario de usted', () => {
+    expect(prompt).toContain('Trata al usuario de USTED');
+  });
+
   it('mantiene la prohibicion de dar datos financieros del usuario', () => {
     expect(prompt).toContain('No des informacion financiera concreta del usuario');
   });

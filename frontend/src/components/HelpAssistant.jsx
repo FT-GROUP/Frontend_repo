@@ -7,9 +7,11 @@ const WELCOME = {
   role: 'assistant',
   content: '¡Hola! Soy el chatbot de FT. GROUP. Puedo ayudarte con respuestas rápidas sobre cómo usar la aplicación. ¿Qué necesitas saber?',
 }
+// El agente trata al usuario de usted (ver promptSoporte.ts); este saludo
+// mantiene el mismo registro para que la conversación no cambie de tono.
 const WELCOME_AGENTE = {
   role: 'assistant',
-  content: '¡Hola! Soy el asistente de soporte de FT. GROUP. Cuéntame qué necesitas: puedo guiarte en el uso de la aplicación y, si algo no funciona, dejo tu caso registrado para que el equipo lo revise.',
+  content: 'Bienvenido al soporte de FT. GROUP. Indíqueme qué necesita: puedo orientarle en el uso de la aplicación y, si algo no funciona, dejo su caso registrado para que el equipo lo revise.',
 }
 const SUGGESTIONS = [
   '¿Cómo creo un grupo?',
@@ -177,7 +179,7 @@ export default function HelpAssistant() {
             {degradado
               ? 'Sin conexión con soporte: respondiendo con las preguntas frecuentes.'
               : modo === MODO.agente
-                ? 'Soporte sobre el uso de la aplicación. No consulta tus saldos ni tus gastos.'
+                ? 'Soporte sobre el uso de la aplicación. No consulta sus saldos ni sus gastos.'
                 : 'Chatbot de preguntas frecuentes; no accede a tus datos.'}
           </p>
         </section>
