@@ -251,19 +251,42 @@ const RootMutation = new GraphQLObjectType({
           throw new Error('Solo un supervisor puede desactivar usuarios.');
         }
         const id = parseInt(args.usuarioId, 10);
+
+        // Mismas reglas de gobierno que /api/administracion. Sin ellas,
+        // esta mutacion seria un camino para dejar el sistema sin ningun
+        // supervisor activo, algo que no se puede revertir desde la
+        // aplicacion.
+        if (id === context.usuario.id) {
+          throw new Error('No puede desactivar su propia cuenta.');
+        }
+
         const res = await pool.query(`SELECT * FROM usuario WHERE id = $1`, [id]);
         if (res.rowCount === 0) throw new Error('Usuario no encontrado.');
         const u = res.rows[0];
 
-        // Guardar en historico
-        try {
-          await poolHistorico.query(
-            `INSERT INTO historico.usuario_inactivo (id, nombre, email, rol, fecha_registro)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (id) DO UPDATE SET fecha_desactivacion = NOW()`,
-            [u.id, u.nombre, u.email, u.rol, u.fecha_registro]
+        if (u.estado === 'inactivo') {
+          throw new Error('La cuenta ya esta desactivada.');
+        }
+
+        if (u.rol === 'supervisor') {
+          const activos = await pool.query<{ total: string }>(
+            `SELECT COUNT(*)::text AS total FROM usuario
+             WHERE rol = 'supervisor' AND estado = 'activo'`,
           );
-        } catch {}
+          if (Number(activos.rows[0]?.total ?? 0) <= 1) {
+            throw new Error('Debe quedar al menos un supervisor activo.');
+          }
+        }
+
+        // El guardado en el historico es parte de la operacion, no un
+        // extra: si falla, no se desactiva la cuenta. Antes el error se
+        // descartaba y el registro se perdia en silencio.
+        await poolHistorico.query(
+          `INSERT INTO historico.usuario_inactivo (id, nombre, email, rol, fecha_registro)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (id) DO UPDATE SET fecha_desactivacion = NOW()`,
+          [u.id, u.nombre, u.email, u.rol, u.fecha_registro]
+        );
 
         await pool.query(`UPDATE usuario SET estado = 'inactivo' WHERE id = $1`, [id]);
         return {
