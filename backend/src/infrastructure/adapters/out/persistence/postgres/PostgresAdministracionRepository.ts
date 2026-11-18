@@ -255,7 +255,7 @@ export class PostgresAdministracionRepository implements AdministracionRepositor
               ag.nombre AS agrupacion_nombre,
               COALESCE(u.nombre, 'Sistema') AS creador_nombre,
               COUNT(DISTINCT m.id) FILTER (WHERE m.estado = 'activo')::int AS miembros_activos,
-              COALESCE(SUM(DISTINCT ga.monto_total), 0)::float AS total_gastos,
+              COALESCE(ga.total, 0)::float AS total_gastos,
               COALESCE(al.ahorrado, 0)::float AS ahorrado_alcancia,
               COALESCE(al.meta, 0)::float AS meta_alcancia,
               g.fecha_creacion
@@ -263,9 +263,11 @@ export class PostgresAdministracionRepository implements AdministracionRepositor
        LEFT JOIN agrupacion_grupo ag ON ag.id = g.agrupacion_id
        LEFT JOIN usuario u ON u.id = g.creado_por
        LEFT JOIN miembro_grupo m ON m.grupo_id = g.id
-       LEFT JOIN gasto ga ON ga.grupo_id = g.id
+       -- Total por grupo en una subconsulta: SUM(DISTINCT) descartaba gastos de
+       -- igual valor (tres arriendos de 2.400.000 contaban como uno).
+       LEFT JOIN (SELECT grupo_id, SUM(monto_total) AS total FROM gasto GROUP BY grupo_id) ga ON ga.grupo_id = g.id
        LEFT JOIN alcancia_grupo al ON al.grupo_id = g.id
-       GROUP BY g.id, ag.nombre, u.nombre, al.ahorrado, al.meta
+       GROUP BY g.id, ag.nombre, u.nombre, al.ahorrado, al.meta, ga.total
        ORDER BY g.fecha_creacion DESC, g.id DESC`,
     ).catch(() => ({ rows: [] }));
 

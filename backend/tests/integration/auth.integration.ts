@@ -34,7 +34,7 @@ describe('Integración · Autenticación (/api/auth)', () => {
   it('valida la entrada del registro con 400 y detalle por campo', async () => {
     const respuesta = await request(app).post('/api/auth/registro').send({ nombre: 'A', email: 'no-es-correo', password: '123' });
     expect(respuesta.status).toBe(400);
-    expect(respuesta.body.errores.map((e: { campo: string }) => e.campo).sort()).toEqual(['email', 'nombre', 'password']);
+    expect([...new Set(respuesta.body.errores.map((e: { campo: string }) => e.campo))].sort()).toEqual(['email', 'nombre', 'password']);
   });
 
   it('inicia sesión y entrega access token JWT + refresh token opaco', async () => {

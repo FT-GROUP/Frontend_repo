@@ -59,7 +59,13 @@ function generarGastosRecurrentes(st, user, grupoId) {
 }
 
 function writeOfflineQueue(user, queue) {
-  localStorage.setItem(queueKey(user.id), JSON.stringify(queue))
+  const serializada = JSON.stringify(queue)
+  // Solo se avisa cuando la cola cambió de verdad. Si se avisara siempre, el
+  // Panel (que escucha este evento para sincronizar) volvería a sincronizar,
+  // escribiría otra vez la misma cola y entraría en un ciclo infinito que
+  // congela la pestaña.
+  if (localStorage.getItem(queueKey(user.id)) === serializada) return
+  localStorage.setItem(queueKey(user.id), serializada)
   window.dispatchEvent(new CustomEvent('ft-offline-queue-updated'))
 }
 

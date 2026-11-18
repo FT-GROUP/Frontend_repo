@@ -31,9 +31,9 @@ export function crearApp(): Application {
   const app = express();
 
   // --- Seguridad basica de cabeceras HTTP ---
-  app.use(helmet({
-    contentSecurityPolicy: false, // Permite consultas y visualizadores GraphQL
-  }));
+  // La API solo responde JSON y no sirve visores GraphQL, así que la CSP
+  // por defecto de Helmet (default-src 'self') no afecta a ningún cliente.
+  app.use(helmet());
 
   // --- CORS ---
   app.use(cors({

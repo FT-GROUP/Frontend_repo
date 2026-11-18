@@ -5,6 +5,7 @@ import { Avatar } from './ui'
 import { firstName } from '../utils/format'
 import BrandMark from './BrandMark'
 import CurrencySwitch from './CurrencySwitch'
+import { useCurrency } from '../currency/CurrencyContext'
 import ThemeSwitch from './ThemeSwitch'
 import LanguageSwitch from './LanguageSwitch'
 import HelpAssistant from './HelpAssistant'
@@ -44,6 +45,7 @@ function useOnline() {
 }
 
 export default function Layout({ user, onLogout, children }) {
+  const { currency } = useCurrency()
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const online = useOnline()
@@ -115,7 +117,9 @@ export default function Layout({ user, onLogout, children }) {
             <span className={`status${online ? '' : ' status-off'}`}><i />{online ? t('status_online') : t('status_offline')}</span>
           </div>
         </header>
-        <main className="content">{children}</main>
+        {/* La clave fuerza a repintar la pantalla al cambiar de divisa: los montos
+            se formatean con money(), que no se suscribe al contexto por sí mismo. */}
+        <main className="content" key={currency}>{children}</main>
       </div>
 
       <nav className="tabbar" aria-label={t('nav_quick')}>

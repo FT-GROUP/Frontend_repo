@@ -161,9 +161,9 @@ export function CurrencyProvider({ children }) {
     return `1 ${currency} ≈ $ ${formatted} COP`
   }, [currency, rates])
 
-  useEffect(() => {
-    setCurrencyFormatter(formatMoney, formatMoneyShort)
-  }, [currency, rates])
+  // Se registra durante el render (no en un efecto) para que las pantallas que
+  // se vuelven a pintar tras cambiar de divisa ya usen el formato nuevo.
+  setCurrencyFormatter(formatMoney, formatMoneyShort)
 
   return (
     <CurrencyContext.Provider

@@ -722,6 +722,9 @@ export class PostgresGrupoGastoRepository implements GrupoGastoRepository {
 
     const grupoId = Number(gasto.rows[0].grupo_id);
     const acreedorId = Number(gasto.rows[0].pagador_id);
+    // Primero la membresía: una persona ajena al grupo recibe 403 y no puede
+    // deducir si existe una deuda suya en ese gasto.
+    await this.exigirMiembro(this.pool, usuarioId, grupoId);
     const participacion = await this.pool.query(
       `SELECT monto_asignado FROM participacion_gasto
        WHERE gasto_id = $1 AND usuario_id = $2 AND estado_pago = 'pendiente'`,

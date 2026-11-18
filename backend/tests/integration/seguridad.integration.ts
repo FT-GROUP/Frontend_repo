@@ -73,9 +73,18 @@ describe('Integración · Seguridad', () => {
         const respuesta = await request(app).post('/api/auth/login').send(cuerpo);
         expect([400, 401]).toContain(respuesta.status);
       }
+      // El nombre ya no admite esos caracteres (política anti-XSS): se rechaza con 400.
       const nombre = await request(app).put('/api/auth/me').set(bearer(usuario)).send({ nombre: "Robert'); DROP TABLE usuario;--" });
-      expect(nombre.status).toBe(200);
-      expect(nombre.body.usuario.nombre).toBe("Robert'); DROP TABLE usuario;--");
+      expect(nombre.status).toBe(400);
+
+      // Un campo de texto libre sí lo admite y debe guardarse literal, como dato.
+      const carga = "Robert'); DROP TABLE usuario;--";
+      const grupo = await request(app).post('/api/grupos').set(bearer(usuario)).send({ nombre: 'Grupo de prueba', descripcion: carga });
+      expect(grupo.status).toBe(201);
+      const guardado = await pool.query('SELECT descripcion FROM grupo WHERE id = $1', [grupo.body.grupo?.id ?? grupo.body.id]);
+      expect(guardado.rows[0].descripcion).toBe(carga);
+      // Se retira el grupo auxiliar para no alterar las pruebas siguientes de este usuario.
+      await pool.query('DELETE FROM grupo WHERE id = $1', [grupo.body.grupo?.id ?? grupo.body.id]);
 
       const despues = await pool.query('SELECT COUNT(*)::int AS total FROM usuario');
       expect(despues.rows[0].total).toBe(antes.rows[0].total);
