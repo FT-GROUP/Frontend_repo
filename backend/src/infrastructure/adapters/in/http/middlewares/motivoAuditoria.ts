@@ -1,4 +1,5 @@
 const MOTIVOS_AUTENTICACION: Record<string, string> = {
+  '/graphql': 'Ejecutar una consulta o mutación GraphQL autorizada.',
   '/api/auth/registro': 'Crear una cuenta para habilitar el acceso al sistema.',
   '/api/auth/login': 'Verificar la identidad y crear una sesión.',
   '/api/auth/refresh': 'Renovar una sesión autenticada.',
@@ -41,7 +42,7 @@ export function motivoSolicitudAuditoria(
     }
     return operacionGraphql
       ? `Ejecutar la operacion "${operacionGraphql}" sobre la API GraphQL.`
-      : 'Ejecutar una operacion sobre la API GraphQL.'
+      : 'Ejecutar una consulta o mutación GraphQL autorizada.'
   }
 
   const motivoEspecifico = MOTIVOS_AUTENTICACION[ruta]

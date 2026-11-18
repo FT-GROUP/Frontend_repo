@@ -76,8 +76,9 @@ npm install
 
 # 2) Configurar variables de entorno
 cp .env.example .env
-# Editar .env: como mínimo, cambia JWT_SECRET por un valor propio.
-#   Puedes generar uno con: openssl rand -base64 48
+# Editar .env: configura JWT_SECRET, JWT_ISSUER y JWT_AUDIENCE.
+#   Genera JWT_SECRET en Windows o macOS/Linux con:
+node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 
 # 3) Levantar PostgreSQL
 #    Opción A: con Docker (recomendado)
@@ -102,6 +103,14 @@ curl http://localhost:3000/health
 ```
 
 ### Para producción
+
+Configura `JWT_SECRET` con un valor aleatorio nuevo (no reutilices el de
+desarrollo), y define `JWT_ISSUER` y `JWT_AUDIENCE` explícitamente. En
+producción el backend rechaza valores de ejemplo y tokens que no coincidan
+con esos claims. Los procesos `micro:*` escuchan solo en `127.0.0.1` por
+defecto; define `SERVICE_HOST` únicamente si deben ser accesibles en una red
+privada y protégelos con reglas de red/firewall. No los expongas directamente
+a Internet.
 
 ```bash
 npm run build      # compila TypeScript a dist/
@@ -132,10 +141,41 @@ La migración `004_roles_usuario.sql` asigna el rol `usuario` por defecto a las 
 | Método | Ruta | Permiso | Función |
 |---|---|---|---|
 | GET | `/api/administracion/usuarios` | Moderador o supervisor | Lista cuentas sin exponer contraseñas ni hashes. |
+| GET | `/api/administracion/usuarios/:id/finanzas` | Supervisor | Consulta grupos y gastos relacionados con una cuenta, en modo de solo lectura y con paginación (`limite` hasta 100, `offset`). |
 | PATCH | `/api/administracion/usuarios/:id/estado` | Moderador o supervisor | Activa, desactiva o bloquea una cuenta. Un moderador solo gestiona cuentas `usuario`. |
 | PATCH | `/api/administracion/usuarios/:id/rol` | Supervisor | Asigna `usuario`, `moderador` o `supervisor`. |
 
 Los cambios no permiten gestionar la propia cuenta desde administración. La autorización usa el rol actual consultado en PostgreSQL, por lo que cambiar un rol o bloquear una cuenta invalida el permiso de la sesión inmediatamente.
+
+Los módulos financieros (`/api/grupos`, reportes, notificaciones, escaneo IA, contratos y educación personal) y las consultas de grupos en GraphQL son exclusivos del rol `usuario`. Los supervisores acceden a la consulta financiera de solo lectura y moderadores a soporte y estadísticas educativas agregadas; ambos accesos se validan en el backend.
+
+### GraphQL
+
+El endpoint es `POST /graphql` y utiliza el mismo token Bearer que la API REST. Las consultas `misGrupos` y `miPanel` entregan al usuario autenticado sus grupos, miembros, gastos agregados y balances; no aceptan un ID de usuario proporcionado por el cliente. `usuarios` permite listar y filtrar cuentas a moderadores y supervisores. `finanzasUsuario(usuarioId, limite, offset)` está reservado al supervisor y reutiliza el servicio de supervisión de solo lectura. `yo` devuelve el perfil autenticado y `gruposArchivados` solo los grupos archivados por la cuenta actual. Las mutaciones `cambiarEstadoUsuario` y `cambiarRolUsuario` reutilizan las reglas del servicio de administración; los alias `desactivarUsuario` y `archivarGrupo` también aplican esas reglas y controles de pertenencia. El frontend consume GraphQL en paneles, grupos, administración y supervisión. Las demás operaciones de escritura financiera, soporte y educación siguen en REST sin duplicar endpoints ni reglas de negocio.
+
+Ejemplo de consulta autenticada:
+
+```graphql
+query MiPanel {
+  miPanel {
+    balance
+    grupos { id nombre totalGastos miBalance }
+    liquidaciones { grupo de para monto }
+  }
+}
+```
+
+Ejemplo de mutación administrativa (moderador o supervisor, sujeto a las reglas de rol):
+
+```graphql
+mutation BloquearCuenta($id: ID!) {
+  cambiarEstadoUsuario(usuarioId: $id, estado: bloqueado) {
+    id nombre estado
+  }
+}
+```
+
+Los errores de negocio GraphQL conservan mensajes seguros y exponen códigos estables en `errors[].extensions.code` (`FORBIDDEN`, `UNAUTHENTICATED`, `BAD_USER_INPUT`, `NOT_FOUND` o `CONFLICT`). Los fallos inesperados se registran en el servidor y se responden con un mensaje genérico, sin revelar consultas, credenciales ni detalles internos. El cliente convierte estos errores en errores de API para que las pantallas los muestren; no reemplaza fallos del backend por cambios simulados.
 
 Para crear o restablecer las cuentas de demostración ejecuta `npm run seed:roles` después de las migraciones. Este comando está bloqueado cuando `NODE_ENV=production`:
 
@@ -146,6 +186,12 @@ Para crear o restablecer las cuentas de demostración ejecuta `npm run seed:role
 | Usuario común | `usuario@ftgroup.test` | `Usuario2026!` |
 
 El comando actualiza únicamente las tres direcciones de correo de prueba.
+
+Para llenar la bandeja de soporte con cuatro casos de ejemplo (abierto, en
+revisión, resuelto y cerrado), ejecuta `npm run seed:soporte` después de
+`npm run seed:roles`. Los casos pertenecen a `usuario@ftgroup.test`, incluyen
+mensajes de seguimiento y no se duplican al volver a ejecutar el comando. El
+seeder está bloqueado cuando `NODE_ENV=production`.
 
 ### Auditoría
 
@@ -178,7 +224,7 @@ Se crean dos proyectos desde el mismo repositorio:
 2. **Frontend:** Root Directory `frontend`, framework Vite. `vercel.json` configura la compilación y el fallback de las rutas React.
 3. Crea una base PostgreSQL de staging (por ejemplo, Neon) accesible desde Vercel. Ejecuta `npm run build` y `npm run migrate` dentro de `backend` con las variables de staging antes de probar el sitio.
 4. Configura variables **separadas para Preview y Production** en Vercel:
-   - Backend: `NODE_ENV=production`, `DATABASE_URL` (secreto TLS del proveedor), `JWT_SECRET` (genera uno nuevo con `openssl rand -base64 48`), `CORS_ORIGIN` (origen HTTPS exacto del frontend, sin `*`) y `DB_POOL_MAX=2`.
+   - Backend: `NODE_ENV=production`, `DATABASE_URL` (con TLS), `JWT_SECRET` (nuevo secreto aleatorio de al menos 32 bytes), `JWT_ISSUER`, `JWT_AUDIENCE`, `CORS_ORIGIN` (origen HTTPS exacto del frontend, sin `*`) y `DB_POOL_MAX=2`.
    - Frontend: `VITE_API_URL=https://<dominio-backend>/api` y `VITE_FINANCE_MODE=local` para mantener los datos financieros de demostración en el navegador. Usa el dominio real que Vercel asigne a Preview/Production.
 5. Vuelve a desplegar después de guardar variables y comprueba `/health`, el inicio de sesión, `/api/estado` como supervisor y la vista Auditoría.
 
@@ -192,10 +238,20 @@ Todas estas rutas requieren `Authorization: Bearer <accessToken>`.
 |--------|------|---------|
 | GET / POST | `/api/grupos` | Listar los grupos propios / crear un grupo (el creador queda como administrador). |
 | GET | `/api/grupos/:grupoId/integrantes` | Consultar integrantes activos del grupo. |
-| POST | `/api/grupos/:grupoId/integrantes` | Agregar un integrante (JSON `{ "usuarioId": 2 }`). Solo administradores gestionan integrantes. |
+| POST | `/api/grupos/:grupoId/integrantes` | Agregar un integrante por ID (`{ "usuarioId": 2 }`) o correo (`{ "email": "ana@example.com" }`). Solo administradores gestionan integrantes; se aplican los límites por usuario y grupo. |
+| POST | `/api/educacion/progreso` | Enviar `{ "leccionId": "presupuesto-essencial", "respuesta": 1 }`; el backend verifica la respuesta y aprueba con 70% o más. |
+| POST | `/api/educacion/metas/:metaId/aportes` | Registrar un aporte acumulativo con `{ "aporte": 50000 }`; no mueve dinero ni representa una transferencia bancaria. |
 | DELETE | `/api/grupos/:grupoId/integrantes/:usuarioId` | Retirar un integrante; el grupo conserva un administrador activo. |
-| GET / POST | `/api/grupos/:grupoId/gastos` | Consultar o registrar gastos con división equitativa o personalizada. |
-| POST | `/api/grupos/gastos/:gastoId/pagos` | Confirmar el pago pendiente del usuario autenticado. |
+| GET / POST | `/api/grupos/:grupoId/gastos` | Consultar o registrar gastos con división equitativa, personalizada, porcentual o por participaciones; admite artículos, moneda original, tasa de cambio e idempotencia. |
+| GET | `/api/grupos/:grupoId/recurrencias` | Consultar las recurrencias del grupo. |
+| PATCH | `/api/grupos/:grupoId/recurrencias/:recurrenciaId` | Pausar o reanudar una recurrencia (solo administrador). |
+| GET / POST | `/api/grupos/:grupoId/plantillas` | Consultar o guardar las plantillas de división del usuario autenticado. |
+| DELETE | `/api/grupos/:grupoId/plantillas/:plantillaId` | Eliminar una plantilla propia. |
+| DELETE | `/api/grupos/gastos/:gastoId` | Eliminar un gasto propio sin pagos confirmados ni liquidaciones asociadas; conserva un movimiento de auditoría. |
+| POST | `/api/grupos/gastos/:gastoId/pagos` | Reportar el pago de la participación del usuario autenticado; no cambia el balance hasta que el acreedor confirme. |
+| GET | `/api/grupos/:grupoId/liquidaciones` | Listar liquidaciones pendientes en las que participa el usuario autenticado. |
+| POST | `/api/grupos/:grupoId/liquidaciones` | Reportar una liquidación entre integrantes (`{ "acreedorId": 2, "monto": 15.50 }`). |
+| POST | `/api/grupos/:grupoId/liquidaciones/:liquidacionId/confirmar` | El acreedor confirma la recepción; entonces se actualizan los balances. |
 | GET | `/api/grupos/:grupoId/balances` | Consultar balances netos del integrante autenticado. |
 | GET | `/api/grupos/:grupoId/historial` | Consultar movimientos recientes del grupo. |
 | GET | `/api/reportes/resumen` | KPIs personales y proyección mensual mediante promedio móvil de los tres meses completos previos. |
@@ -216,9 +272,56 @@ Ejemplo de gasto equitativo:
 ```
 
 El servicio reparte los importes en centavos para conservar exactamente el
-monto total. El alta del gasto, sus participaciones, movimientos, notificaciones
-y el recálculo de balances se ejecutan dentro de una transacción. Las migraciones
-`003_modulos_financieros.sql` crean las tablas e índices de estos módulos.
+monto total. Para `porcentaje` y `participaciones`, el cuerpo usa
+`asignaciones: [{ "usuarioId": 1, "valor": 60 }, ...]`; para la división
+personalizada usa `participaciones: [{ "usuarioId": 1, "montoAsignado": 12 }]`.
+El alta del gasto, sus participaciones, movimientos, notificaciones y el
+recálculo de balances se ejecutan dentro de una transacción.
+
+La migración `014_splitwise_capabilities.sql` añade monedas y tasas manuales
+fijas por grupo, datos monetarios originales, artículos, claves de idempotencia,
+recurrencias y plantillas de división. Un grupo conserva su ledger en su moneda;
+la tasa del grupo convierte los balances agregados a COP. La tasa ingresada por
+gasto convierte el monto original a la moneda contable del grupo. Aplica la
+migración con `npm run migrate:dev` antes de usar estas capacidades.
+
+Las recurrencias vencidas se generan al consultar los gastos, hasta 12
+ocurrencias por consulta; no hay scheduler de fondo. Las fechas mensuales y
+anuales conservan el día/mes de referencia y se ajustan al último día cuando
+el mes no tiene ese día. Si el pagador o algún participante deja de pertenecer
+al grupo, la recurrencia se pausa. El cliente conserva gastos creados sin
+conexión en una cola local; la sincronización de mutaciones fuera de línea se
+limita a crear gastos.
+
+Para registrar un grupo, enviar `integrantes` como una lista opcional de correos
+de cuentas activas. La creación del grupo y la incorporación de sus integrantes
+se guardan en una transacción. Los reportes de pago permanecen pendientes y no
+reducen una deuda hasta la confirmación del acreedor; se requiere aplicar
+`013_liquidaciones_confirmadas.sql` antes de usar este flujo. En el cliente,
+los errores del modo API se muestran como errores y no se reemplazan por datos
+locales; la demostración local se selecciona explícitamente.
+
+Una persona puede pertenecer a un máximo de 10 grupos activos y cada grupo
+admite hasta 20 personas, contando a su administrador. Los límites también se
+verifican transaccionalmente al crear grupos o agregar integrantes, para evitar
+excederlos con operaciones simultáneas. Las respuestas correctas de las
+evaluaciones educativas se comparan en el backend y no se envían en el contenido
+de las lecciones.
+
+### Verificación de comprobantes
+
+`POST /api/ia/facturas` extrae campos con IA y calcula un hash SHA-256 del archivo.
+Cuando se utiliza OCR local, `POST /api/ia/verificar` recibe `{ "texto": "...",
+"archivoHash": "<sha256>" }` para revisar consistencia aritmética, formato de
+identificadores y duplicados previamente guardados. Al crear un gasto se puede
+enviar el objeto `comprobante` con ese hash y los campos detectados; el resultado
+queda persistido en `comprobante_factura` dentro de la misma transacción del gasto.
+
+Los estados `datos_consistentes`, `inconsistente`, `pendiente` y `duplicada` son
+controles internos, no una prueba de autenticidad. La aplicación no consulta a
+la DIAN ni valida criptográficamente CUFE/CUDE; la interfaz lo indica de forma
+explícita. La migración `012_verificacion_comprobantes.sql` se ejecuta con
+`npm run migrate:dev`.
 
 ### Ejemplos con `curl`
 

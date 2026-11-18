@@ -1,7 +1,11 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { financeApi } from '../src/services/financeApi.js'
-import { adminApi } from '../src/services/adminApi.js'
+import { register } from 'node:module'
+
+// financeApi importa módulos sin extensión (estilo Vite); este hook los resuelve en Node.
+register('./helpers/resolverSinExtension.mjs', import.meta.url)
+const { financeApi } = await import('../src/services/financeApi.js')
+const { adminApi } = await import('../src/services/adminApi.js')
 
 const demoUser = {
   id: 'u-demo-test',

@@ -4,6 +4,7 @@ import {
   AdministracionRepository,
   AgrupacionAdministracion,
   GrupoAdministracion,
+  SupervisionFinanciera,
   UsuarioAdministracion,
 } from '../../domain/ports/out/AdministracionRepository';
 
@@ -51,6 +52,20 @@ export class AdministracionService {
     const actualizado = await this.repository.actualizarGrupoAdministracion(grupoId, datos);
     if (!actualizado) throw new GrupoNoEncontradoError(grupoId);
     return actualizado;
+  }
+
+  async consultarFinanzasUsuario(
+    actorRol: RolUsuario,
+    usuarioId: number,
+    limite: number,
+    offset: number,
+  ): Promise<SupervisionFinanciera> {
+    if (actorRol !== 'supervisor') {
+      throw new AccesoDenegadoError('Solo un supervisor puede consultar las finanzas de otros usuarios.');
+    }
+    const finanzas = await this.repository.consultarFinanzasUsuario(usuarioId, limite, offset);
+    if (!finanzas) throw new UsuarioNoEncontradoError(usuarioId);
+    return finanzas;
   }
 
   async cambiarEstado(

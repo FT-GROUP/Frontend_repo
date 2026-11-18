@@ -8,20 +8,35 @@ Frontend web (React + Vite) de FT. GROUP, basado en los prototipos de las versio
 |---|---|---|
 | `/login`, `/registro` | Autenticación | **Backend real** (`/api/auth`) |
 | `/panel` | Panel de control: balance neto, te deben / debes, liquidaciones sugeridas, mis grupos, mapa | **Backend real**, excepto la cuenta de exposición |
-| `/grupos` | Grupos financieros: tarjetas con miembros, total y mi balance; crear grupo; agregar integrantes | **Backend real**, excepto la cuenta de exposición |
-| `/gastos` | Registro de gastos: filtro por grupo, tabla (tarjetas en celular), agregar gasto con división igual o personalizada, detalle y registro de pagos | **Backend real**, excepto la cuenta de exposición |
+| `/grupos` | Grupos financieros: ver integrantes y balances; crear grupos y agregar integrantes, con límites visibles | **Backend real**, excepto la cuenta de exposición |
+| `/educacion` | Evaluaciones con aprobación validada por el backend, progreso consolidado y registro manual de aportes a metas de ahorro | **Backend real** |
+| `/gastos` | Registro y búsqueda de gastos, división equitativa, personalizada, por porcentaje o participaciones, artículos, moneda, plantillas, recurrencias y registro de pagos | **Backend real**, excepto la cuenta de exposición |
 | `/analisis` | Análisis y predicciones: KPIs básicos con semáforo, indicadores, estimadores, proyección y gastos atípicos | Se calcula en el navegador con los datos de gastos y grupos |
-| `/historial` | Historial por mes con filtros de grupo y categoría, total filtrado y movimientos recientes | **Backend real**, excepto la cuenta de exposición |
+| `/historial` | Historial por mes con filtros y búsqueda, total filtrado, movimientos recientes e importación CSV con vista previa | **Backend real**, excepto la cuenta de exposición |
 | `/escanear` | Escaneo de recibos: carga/arrastre o cámara del celular, OCR con Tesseract.js y formulario prellenado | Usa los grupos de demostración de la cuenta de exposición |
 | `/perfil` | Ver/editar nombre y teléfono, desactivar cuenta, cerrar sesión | **Backend real** |
 | `/administracion` | Gestión de cuentas: consulta de usuarios y acciones permitidas por rol | **Backend real** |
 | `/auditoria` | Bitácora paginada y filtrable de actividad | **Solo supervisor** |
+| `/supervision` | Consulta de solo lectura de grupos y actividad financiera por cuenta | **Solo supervisor** |
+| `/moderacion` | Resumen y accesos de moderación de cuentas, soporte y academia | **Solo moderador** |
 
 La ruta de administración solo está disponible para `moderador` y `supervisor`. El moderador puede cambiar estado a cuentas con rol `usuario`; el supervisor puede cambiar estados y asignar roles. El backend vuelve a comprobar el rol y el estado actual de la cuenta en cada petición protegida.
+
+El menú del supervisor es independiente del menú financiero común e incluye Supervisión de usuarios, Administración, Auditoría, Estado del sistema y Control educativo. Las rutas financieras de usuario están bloqueadas para ese rol. La vista de supervisión permite revisar grupos y gastos asociados a una cuenta, con paginación y sin acciones de escritura; el backend restringe esta consulta al supervisor.
+
+El menú del moderador incluye Panel de moderación, Administración, Soporte y Moderación educativa. No muestra ni permite abrir los módulos financieros de usuario común. En educación solo consulta indicadores agregados; la publicación de lecciones sigue reservada al supervisor. En soporte, la bandeja de casos se abre por defecto. El backend también rechaza el acceso de moderadores y supervisores a los endpoints financieros comunes.
 
 La auditoría está disponible únicamente para supervisores. Registra solicitudes autenticadas del backend y las acciones de escritura de la demostración local. No almacena contraseñas, tokens ni datos de formularios.
 
 En las cuentas normales, los módulos financieros usan el backend y PostgreSQL. La cuenta común de exposición usa datos de ejemplo guardados en el navegador; las operaciones que realices con ella no modifican PostgreSQL. Para crear un grupo en el modo backend, los integrantes deben tener una cuenta registrada y se agregan por su correo.
+
+Cada persona puede pertenecer a un máximo de 10 grupos activos y cada grupo puede tener hasta 20 integrantes, incluyendo al administrador. La academia calcula la aprobación de cada evaluación en el backend; se requiere aprobar todas las evaluaciones esenciales con al menos 70% para habilitar el progreso de conocimiento consolidado. Las metas avanzan al registrar manualmente cada aporte que ya se apartó; la app no mueve dinero ni se conecta a cuentas bancarias.
+
+Los pagos del modo backend siguen confirmación bilateral: el deudor reporta la transferencia y el acreedor la confirma desde el panel; el balance cambia solo después de confirmar. Los errores de red o del API se muestran y no se convierten en operaciones locales exitosas. En modo de demostración, las operaciones permanecen en el navegador.
+
+Los grupos usan una moneda contable y una tasa manual fija a COP; los gastos también guardan moneda y monto originales con su tasa de cambio. Se pueden registrar artículos y dividir por porcentajes o participaciones. Las plantillas se guardan por usuario y grupo. Los gastos recurrentes se generan al consultar los gastos (hasta 12 ocurrencias por consulta), no mediante un scheduler en segundo plano; las frecuencias mensual y anual conservan el día/mes de referencia y se ajustan al último día del mes cuando sea necesario.
+
+El historial permite importar hasta 100 filas de un CSV de máximo 2 MB, con columnas de descripción, fecha, monto y categoría. La importación muestra una vista previa, divide cada gasto equitativamente entre los integrantes y no confirma pagos ni concilia automáticamente extractos bancarios. Los pagos externos son instrucciones y reportes con confirmación bilateral; la aplicación no mueve dinero.
 
 La cuenta `usuario@ftgroup.test` usa automáticamente datos financieros de demostración guardados solo en el navegador, incluso si `VITE_FINANCE_MODE=api`. Así puede recorrer con ejemplos el panel, grupos, gastos, historial, análisis y escaneo, sin modificar datos del backend. En «Mi perfil» se pueden restaurar los datos de ejemplo. Las demás cuentas siguen usando el modo configurado. Si quieres poner toda la app en modo demostración, usa `VITE_FINANCE_MODE=local`.
 
@@ -30,6 +45,14 @@ La cuenta `usuario@ftgroup.test` usa automáticamente datos financieros de demos
 - **Portátil (≥ 1024 px):** menú lateral fijo y expandido, como en el prototipo de portátil.
 - **Tablet (721–1023 px):** menú lateral que se abre con el botón ☰, como en el prototipo de tablet.
 - **Celular (≤ 720 px):** barra de navegación inferior, tabla de gastos en forma de tarjetas, filtros con desplazamiento horizontal y ventanas que suben desde abajo.
+
+## Idioma
+
+El selector de idioma cambia inmediatamente los textos localizados de navegación,
+inicio de sesión, panel, grupos, gastos, historial y perfil. La preferencia se
+guarda en el navegador; **Automático** usa el idioma del dispositivo. También se
+actualiza el atributo `lang` del documento para lectores de pantalla y otras
+herramientas del navegador.
 
 ## Cómo ejecutar
 
@@ -104,8 +127,12 @@ Los umbrales están en `METAS`, dentro de `kpis.js`.
 
 **Indicadores y estimadores** (`src/utils/analitica.js`):
 - **Indicadores:** gasto mensual promedio, ticket promedio y mediano, cumplimiento de pago, días para saldar, frecuencia, concentración de aportes (Herfindahl), % de gastos con OCR y distribución por categoría.
-- **Estimadores:** run rate, media móvil basada en los últimos 7 días (extrapolada al mes), regresión lineal (R²) y suavizado exponencial, combinados en un consenso.
-- **Predicciones:** proyección de 3 o 6 meses con índice estacional y detección de gastos atípicos (puntaje z).
+- **Comparación:** variación por categoría y grupo frente al mes anterior hasta el mismo día; una categoría sin periodo base se marca “Sin base”, no como porcentaje infinito.
+- **Estimadores:** run rate, media móvil basada en los últimos 7 días (extrapolada al mes), regresión lineal (R²) y suavizado exponencial. Los meses sin gastos se incluyen como cero y la estacionalidad solo se aplica con al menos dos observaciones para ese mes calendario.
+- **Validación temporal:** el pronóstico mensual se evalúa con ventanas históricas consecutivas (cada pronóstico se entrena solo con meses anteriores). Con menos de tres predicciones de prueba el nivel se muestra insuficiente; de lo contrario se informa error porcentual y un rango empírico P80.
+- **Gastos atípicos:** comparación por mediana y dispersión robusta contra gastos del mismo grupo/categoría, categoría, grupo o conjunto general. Se exige una base comparable suficiente; una alerta indica revisión, no fraude.
+
+Todos los cálculos se realizan en el navegador sobre los gastos que el usuario puede consultar. Los rangos son orientativos, no garantías ni decisiones automáticas.
 
 **Datos históricos de prueba (modo local).** Inicia sesión, abre la consola del navegador, pega `scripts/seed-historico.js` y recarga la página. Así se cargan 12 meses de gastos.
 
