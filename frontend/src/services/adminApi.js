@@ -1,6 +1,6 @@
 import { request } from './http.js'
 import { arrayFromResponse } from '../utils/apiResponse.js'
-import { graphqlApi } from './graphqlApi'
+import { graphqlAdminApi as graphqlApi } from './graphqlAdminApi'
 
 const ADMIN_GROUPS_KEY = 'ft_admin_grupos_v1'
 

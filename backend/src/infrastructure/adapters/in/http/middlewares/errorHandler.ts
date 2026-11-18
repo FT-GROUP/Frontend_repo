@@ -3,6 +3,9 @@ import {
   AccesoDenegadoError,
   AsistenteNoDisponibleError,
   CredencialesInvalidasError,
+  CambioContrasenaRequeridoError,
+  ContrasenaActualIncorrectaError,
+  ContrasenaNoValidaError,
   ConflictoEstadoError,
   EmailYaRegistradoError,
   GastoNoEncontradoError,
@@ -34,6 +37,16 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
 
   if (err instanceof ConflictoEstadoError) {
     res.status(409).json({ error: err.name, mensaje: err.message });
+    return;
+  }
+
+  if (err instanceof ContrasenaActualIncorrectaError || err instanceof ContrasenaNoValidaError) {
+    res.status(400).json({ error: err.name, mensaje: err.message });
+    return;
+  }
+
+  if (err instanceof CambioContrasenaRequeridoError) {
+    res.status(403).json({ error: 'CambioContrasenaRequerido', mensaje: err.message });
     return;
   }
 

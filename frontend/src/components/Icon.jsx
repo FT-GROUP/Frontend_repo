@@ -13,6 +13,7 @@ const P = {
   close: <><path d="M18 6 6 18M6 6l12 12" /></>,
   plus: <><path d="M12 5v14M5 12h14" /></>,
   check: <><path d="m5 12 5 5 9-10" /></>,
+  dot: <><circle cx="12" cy="12" r="3" /></>,
   arrow: <><path d="M5 12h14M13 6l6 6-6 6" /></>,
   camera: <><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z" /><circle cx="12" cy="13" r="4" /></>,
   upload: <><path d="M12 16V4M6 10l6-6 6 6" /><path d="M4 20h16" /></>,

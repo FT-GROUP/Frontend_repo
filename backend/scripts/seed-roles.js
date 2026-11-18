@@ -2,6 +2,27 @@ require('dotenv').config();
 const argon2 = require('argon2');
 const { Pool } = require('pg');
 
+// Estas cuentas tienen contraseñas conocidas (están en el repositorio).
+// Nunca deben crearse en producción: el script se niega salvo que se
+// pida explícitamente y con contraseñas propias definidas en el entorno.
+if (process.env.NODE_ENV === 'production' && process.env.PERMITIR_SEED_ROLES !== 'true') {
+  console.error('❌ seed-roles está bloqueado con NODE_ENV=production.');
+  console.error('   Las cuentas de prueba usan contraseñas públicas. Si de verdad necesitas');
+  console.error('   crearlas, define PERMITIR_SEED_ROLES=true y SEED_PASSWORD_USUARIO,');
+  console.error('   SEED_PASSWORD_MODERADOR y SEED_PASSWORD_SUPERVISOR.');
+  process.exit(1);
+}
+const enProduccion = process.env.NODE_ENV === 'production';
+function contrasena(variable, porDefecto) {
+  const valor = process.env[variable];
+  if (valor) return valor;
+  if (enProduccion) {
+    console.error(`❌ Falta ${variable}: en producción no se usan las contraseñas por defecto.`);
+    process.exit(1);
+  }
+  return porDefecto;
+}
+
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
@@ -15,9 +36,9 @@ async function seed() {
   try {
     // Roles de prueba
     const users = [
-      { email: 'usuario@ftgroup.test', nombre: 'Carlos Usuario', password: 'Usuario2026!', rol: 'usuario', score: 780, nivel: 'Plata' },
-      { email: 'moderador@ftgroup.test', nombre: 'Ana Moderadora', password: 'Moderador2026!', rol: 'moderador', score: 850, nivel: 'Oro' },
-      { email: 'supervisor@ftgroup.test', nombre: 'Sanny Supervisora', password: 'Supervisor2026!', rol: 'supervisor', score: 920, nivel: 'Diamante' }
+      { email: 'usuario@ftgroup.test', nombre: 'Carlos Usuario', password: contrasena('SEED_PASSWORD_USUARIO', 'Usuario2026!'), rol: 'usuario', score: 780, nivel: 'Plata' },
+      { email: 'moderador@ftgroup.test', nombre: 'Ana Moderadora', password: contrasena('SEED_PASSWORD_MODERADOR', 'Moderador2026!'), rol: 'moderador', score: 850, nivel: 'Oro' },
+      { email: 'supervisor@ftgroup.test', nombre: 'Sanny Supervisora', password: contrasena('SEED_PASSWORD_SUPERVISOR', 'Supervisor2026!'), rol: 'supervisor', score: 920, nivel: 'Diamante' }
     ];
 
     for (const u of users) {

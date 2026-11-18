@@ -27,6 +27,27 @@ export class CredencialesInvalidasError extends DomainError {
   }
 }
 
+/** La contrasena actual no coincide al intentar cambiarla (400, no 401: la sesion sigue siendo valida). */
+export class ContrasenaActualIncorrectaError extends DomainError {
+  constructor() {
+    super('La contrasena actual no es correcta.');
+  }
+}
+
+/** La nueva contrasena no cumple la politica. */
+export class ContrasenaNoValidaError extends DomainError {
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
+/** La cuenta debe cambiar su contrasena antes de usar el resto del sistema. */
+export class CambioContrasenaRequeridoError extends DomainError {
+  constructor() {
+    super('Debes cambiar tu contrasena antes de continuar.');
+  }
+}
+
 export class UsuarioNoEncontradoError extends DomainError {
   constructor(identificador: string | number) {
     super(`No se encontro el usuario "${identificador}".`);

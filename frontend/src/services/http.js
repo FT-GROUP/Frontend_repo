@@ -59,6 +59,9 @@ async function rawRequest(path, { method = 'GET', body, auth = false, timeout = 
   if (response.status === 204) return null
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
+    if (response.status === 403 && data.error === 'CambioContrasenaRequerido' && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ft:cambio-contrasena-requerido'))
+    }
     const detalle = (Array.isArray(data.errores) && data.errores[0]?.mensaje) || (Array.isArray(data.detalles) && data.detalles[0]?.mensaje)
     throw new ApiError(
       detalle || data.mensaje || data.message || 'No fue posible completar la solicitud.',

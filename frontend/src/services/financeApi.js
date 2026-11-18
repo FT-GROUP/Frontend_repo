@@ -12,7 +12,6 @@ import { today } from '../utils/format'
 import { arrayFromResponse } from '../utils/apiResponse'
 import { usesLocalFinance as shouldUseLocalFinance } from '../utils/demoAccount'
 import { assertCanAddGroupMember, assertCanCreateGroup } from '../utils/groupLimits'
-import { auditoriaApi } from './auditoriaApi'
 import { graphqlApi } from './graphqlApi'
 
 const MODE = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FINANCE_MODE) || 'api'
@@ -864,7 +863,9 @@ const localConAuditoria = new Proxy(local, {
         ? (argumentos[1]?.empty ? 'datos_demo_borrar' : 'datos_demo_restaurar')
         : ACCIONES_AUDITADAS[propiedad]
       if (accion) {
-        auditoriaApi.record(accion).catch(error => {
+        // Import dinámico: el módulo de auditoría (y sus datos de demostración)
+        // no se incluye en el paquete principal que descarga cualquier visitante.
+        import('./auditoriaApi.js').then(({ auditoriaApi }) => auditoriaApi.record(accion)).catch(error => {
           console.error('No fue posible sincronizar la actividad local con la auditoría:', error)
         })
       }

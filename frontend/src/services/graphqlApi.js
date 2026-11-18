@@ -46,27 +46,6 @@ export async function queryGraphQL(query, variables = {}) {
 }
 
 export const graphqlApi = {
-  /**
-   * Consulta usuarios combinando Base de Datos Activa y Cold Storage (Inactivos)
-   */
-  async obtenerUsuarios(estado = null) {
-    const query = `
-      query ObtenerUsuarios($estado: EstadoUsuario) {
-        usuarios(estado: $estado) {
-          id
-          nombre
-          email
-          rol
-          estado
-          fechaRegistro
-          origenBaseDatos
-        }
-      }
-    `;
-    const data = await queryGraphQL(query, { estado });
-    return (data?.usuarios || []).map(usuario => ({ ...usuario, id: Number(usuario.id) }));
-  },
-
   async obtenerYo() {
     const data = await queryGraphQL('query { yo { id nombre email rol estado fechaRegistro } }');
     return data?.yo ? { ...data.yo, id: Number(data.yo.id) } : null;
@@ -184,67 +163,6 @@ export const graphqlApi = {
     };
   },
 
-  async obtenerFinanzasUsuario(usuarioId, { limite = 50, offset = 0 } = {}) {
-    const query = `
-      query FinanzasUsuario($usuarioId: ID!, $limite: Int!, $offset: Int!) {
-        finanzasUsuario(usuarioId: $usuarioId, limite: $limite, offset: $offset) {
-          usuario { id nombre email rol estado fechaRegistro }
-          resumen { grupos gastos montoPagado montoAsignado montoPendiente }
-          grupos {
-            id
-            nombre
-            estado
-            rol
-            fechaUnion
-            fechaCreacion
-            numeroGastos
-          }
-          gastos {
-            id
-            grupoId
-            grupo
-            pagadorId
-            pagador
-            descripcion
-            montoTotal
-            fechaGasto
-            categoria
-            montoAsignado
-            estadoPago
-            fechaPago
-          }
-          paginacion { limite offset total }
-        }
-      }
-    `;
-    const data = await queryGraphQL(query, { usuarioId: String(usuarioId), limite, offset });
-    return data?.finanzasUsuario;
-  },
-
-  async cambiarEstadoUsuario(usuarioId, estado) {
-    const query = `
-      mutation CambiarEstadoUsuario($usuarioId: ID!, $estado: EstadoUsuario!) {
-        cambiarEstadoUsuario(usuarioId: $usuarioId, estado: $estado) {
-          id nombre email rol estado fechaRegistro origenBaseDatos
-        }
-      }
-    `;
-    const data = await queryGraphQL(query, { usuarioId: String(usuarioId), estado });
-    return { ...data.cambiarEstadoUsuario, id: Number(data.cambiarEstadoUsuario.id) };
-  },
-
-  async cambiarRolUsuario(usuarioId, rol) {
-    const query = `
-      mutation CambiarRolUsuario($usuarioId: ID!, $rol: RolUsuario!) {
-        cambiarRolUsuario(usuarioId: $usuarioId, rol: $rol) {
-          id nombre email rol estado fechaRegistro origenBaseDatos
-        }
-      }
-    `;
-    const data = await queryGraphQL(query, { usuarioId: String(usuarioId), rol });
-    return { ...data.cambiarRolUsuario, id: Number(data.cambiarRolUsuario.id) };
-  },
-
   /**
    * Archiva un grupo y lo transfiere a la base de datos historica
    */
@@ -256,23 +174,5 @@ export const graphqlApi = {
     `;
     const data = await queryGraphQL(query, { grupoId: String(grupoId) });
     return data?.archivarGrupo;
-  },
-
-  /**
-   * Desactiva un usuario trasladandolo a la BD historica / cold storage
-   */
-  async desactivarUsuario(usuarioId) {
-    const query = `
-      mutation Desactivar($usuarioId: ID!) {
-        desactivarUsuario(usuarioId: $usuarioId) {
-          id
-          nombre
-          estado
-          origenBaseDatos
-        }
-      }
-    `;
-    const data = await queryGraphQL(query, { usuarioId: String(usuarioId) });
-    return data?.desactivarUsuario;
   },
 };

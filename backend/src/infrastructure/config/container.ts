@@ -1,3 +1,4 @@
+import { CambiarContrasenaUseCaseImpl } from '../../application/usecases/CambiarContrasenaUseCaseImpl';
 import { pool, poolHistorico } from '../adapters/out/persistence/postgres/db';
 import { PostgresUsuarioRepository } from '../adapters/out/persistence/postgres/PostgresUsuarioRepository';
 import { PostgresRefreshTokenRepository } from '../adapters/out/persistence/postgres/PostgresRefreshTokenRepository';
@@ -69,6 +70,7 @@ export const cerrarSesionUseCase = new CerrarSesionUseCaseImpl(refreshTokenRepos
 
 export const obtenerPerfilUseCase = new ObtenerPerfilUseCaseImpl(usuarioRepository);
 export const actualizarPerfilUseCase = new ActualizarPerfilUseCaseImpl(usuarioRepository);
+export const cambiarContrasenaUseCase = new CambiarContrasenaUseCaseImpl(usuarioRepository, refreshTokenRepository, passwordHasher);
 export const desactivarCuentaUseCase = new DesactivarCuentaUseCaseImpl(usuarioRepository, refreshTokenRepository);
 export const activarCuentaUseCase = new ActivarCuentaUseCaseImpl(usuarioRepository);
 

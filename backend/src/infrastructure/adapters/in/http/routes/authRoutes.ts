@@ -8,6 +8,7 @@ import {
   iniciarSesionSchema,
   refrescarTokenSchema,
   actualizarPerfilSchema,
+  cambiarContrasenaSchema,
 } from '../validators/authValidators';
 
 const router = Router();
@@ -49,6 +50,14 @@ router.post(
 
 // GET /api/auth/me -> perfil del usuario autenticado
 router.get('/me', autenticar, AuthController.perfil);
+
+// PUT /api/auth/me/contrasena -> cambiar la contrasena (exige la actual)
+router.put(
+  '/me/contrasena',
+  autenticar,
+  validarBody(cambiarContrasenaSchema),
+  AuthController.cambiarContrasena,
+);
 
 // PUT /api/auth/me -> actualizar nombre y/o telefono del usuario autenticado
 router.put(

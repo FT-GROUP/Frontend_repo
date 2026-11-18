@@ -11,6 +11,7 @@ interface FilaUsuario {
   fecha_registro: Date;
   estado: EstadoUsuario;
   rol: RolUsuario;
+  debe_cambiar_contrasena: boolean;
 }
 
 /**
@@ -34,7 +35,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
     const query = `
       INSERT INTO usuario (nombre, email, password_hash, telefono, estado)
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, nombre, email, password_hash, telefono, fecha_registro, estado, rol
+      RETURNING id, nombre, email, password_hash, telefono, fecha_registro, estado, rol, debe_cambiar_contrasena
     `;
     const valores = [usuario.nombre, usuario.email, usuario.passwordHash, usuario.telefono, usuario.estado];
 
@@ -47,7 +48,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
       UPDATE usuario
       SET nombre = $1, telefono = $2, estado = $3
       WHERE id = $4
-      RETURNING id, nombre, email, password_hash, telefono, fecha_registro, estado, rol
+      RETURNING id, nombre, email, password_hash, telefono, fecha_registro, estado, rol, debe_cambiar_contrasena
     `;
     const valores = [usuario.nombre, usuario.telefono, usuario.estado, usuario.id];
     const resultado = await this.pool.query<FilaUsuario>(query, valores);
@@ -58,9 +59,20 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
     await this.pool.query('UPDATE usuario SET password_hash = $1 WHERE id = $2', [passwordHash, usuarioId]);
   }
 
+  async cambiarContrasena(usuarioId: number, passwordHash: string): Promise<void> {
+    await this.pool.query(
+      'UPDATE usuario SET password_hash = $1, debe_cambiar_contrasena = FALSE WHERE id = $2',
+      [passwordHash, usuarioId],
+    );
+  }
+
+  async marcarCambioContrasena(usuarioId: number, debeCambiar: boolean): Promise<void> {
+    await this.pool.query('UPDATE usuario SET debe_cambiar_contrasena = $1 WHERE id = $2', [debeCambiar, usuarioId]);
+  }
+
   async buscarPorEmail(email: string): Promise<Usuario | null> {
     const query = `
-      SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado, rol
+      SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado, rol, debe_cambiar_contrasena
       FROM usuario
       WHERE email = $1
       LIMIT 1
@@ -72,7 +84,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
 
   async buscarPorId(id: number): Promise<Usuario | null> {
     const query = `
-      SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado, rol
+      SELECT id, nombre, email, password_hash, telefono, fecha_registro, estado, rol, debe_cambiar_contrasena
       FROM usuario
       WHERE id = $1
       LIMIT 1
@@ -98,6 +110,7 @@ export class PostgresUsuarioRepository implements UsuarioRepository {
       fechaRegistro: new Date(fila.fecha_registro),
       estado: fila.estado,
       rol: fila.rol,
+      debeCambiarContrasena: Boolean(fila.debe_cambiar_contrasena),
     });
   }
 }

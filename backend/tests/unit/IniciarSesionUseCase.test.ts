@@ -11,6 +11,8 @@ describe('IniciarSesionUseCaseImpl', () => {
     const usuarioRepository: jest.Mocked<UsuarioRepository> = {
       guardar: jest.fn(),
       actualizarPasswordHash: jest.fn(),
+      cambiarContrasena: jest.fn(),
+      marcarCambioContrasena: jest.fn(),
       buscarPorEmail: jest.fn(),
       buscarPorId: jest.fn(),
       existeEmail: jest.fn(),

@@ -3,6 +3,7 @@ import { authApi } from '../services/authApi'
 import { financeApi, usesLocalFinance } from '../services/financeApi'
 import { Alert, Avatar, PageHeader } from '../components/ui'
 import Icon from '../components/Icon'
+import ChangePassword from '../components/ChangePassword'
 import { useI18n } from '../i18n/I18nContext'
 import LanguageSwitch from '../components/LanguageSwitch'
 import { useTheme } from '../theme/ThemeContext'
@@ -80,6 +81,11 @@ export default function Profile({ user, setUser, onLogout }) {
             </div>
             <button className="btn btn-primary" disabled={saving}>{saving ? t('saving') : t('save_changes')}</button>
           </form>
+        </section>
+
+        <section className="card">
+          <h3 className="card-title"><Icon name="shield" size={18} /> Contraseña</h3>
+          <ChangePassword user={user} onChanged={setUser} />
         </section>
 
         <div className="stack">

@@ -32,6 +32,18 @@ export interface SesionResultado {
   accessToken: string;
   refreshToken: string;
   usuario: RegistrarUsuarioResultado;
+  /** true si la contrasena usada no cumple la politica: hay que cambiarla antes de seguir. */
+  debeCambiarContrasena: boolean;
+}
+
+export interface CambiarContrasenaComando {
+  usuarioId: number;
+  passwordActual: string;
+  passwordNueva: string;
+}
+
+export interface CambiarContrasenaUseCase {
+  ejecutar(comando: CambiarContrasenaComando): Promise<void>;
 }
 
 export interface RegistrarUsuarioUseCase {

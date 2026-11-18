@@ -1,3 +1,4 @@
+import { passwordError } from '../utils/passwordPolicy'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { authApi } from '../services/authApi'
@@ -101,8 +102,9 @@ export function Register() {
 
   const submit = async e => {
     e.preventDefault(); setError('')
-    // El backend aplica la misma regla; esto solo evita el viaje al servidor.
-    if (/\s/.test(form.password)) return setError('La contraseña no puede contener espacios.')
+    // El backend aplica la misma política; esto solo evita el viaje al servidor.
+    const errorPassword = passwordError(form.password)
+    if (errorPassword) return setError(errorPassword)
     if (form.password !== form.confirm) return setError(t('err_passwords_dont_match'))
     setSending(true)
     try {

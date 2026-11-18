@@ -24,8 +24,23 @@ export const authApi = {
       timeout: 15000,
     })
     tokens.save(data)
-    saveLocalUser(data.usuario)
-    return data.usuario
+    // Si la contraseña no cumple la política, el backend solo permite cambiarla.
+    const user = { ...data.usuario, debeCambiarContrasena: Boolean(data.debeCambiarContrasena) }
+    saveLocalUser(user)
+    return user
+  },
+
+  /**
+   * Cambia la contraseña. El backend cierra todas las sesiones al hacerlo,
+   * así que se vuelve a iniciar sesión con la nueva para seguir trabajando.
+   */
+  async changePassword(email, passwordActual, passwordNueva) {
+    await request('/auth/me/contrasena', {
+      method: 'PUT',
+      auth: true,
+      body: { passwordActual, passwordNueva },
+    })
+    return this.login(email, passwordNueva)
   },
 
   async register({ nombre, email, password, telefono }) {
@@ -38,8 +53,9 @@ export const authApi = {
 
   async me() {
     const data = await request('/auth/me', { auth: true })
-    saveLocalUser(data.usuario)
-    return data.usuario
+    const user = { ...data.usuario, debeCambiarContrasena: Boolean(data.debeCambiarContrasena) }
+    saveLocalUser(user)
+    return user
   },
 
   /** Restaura la sesión guardada (renovando el token si hace falta). */

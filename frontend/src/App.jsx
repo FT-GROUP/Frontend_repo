@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { Suspense, lazy, useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { authApi } from './services/authApi'
 import { tokens } from './services/http'
@@ -12,13 +12,19 @@ import Analisis from './pages/Analisis'
 import Scan from './pages/Scan'
 import Soporte from './pages/Soporte'
 import Profile from './pages/Profile'
-import Administracion from './pages/Administracion'
-import Auditoria from './pages/Auditoria'
-import EstadoSistema from './pages/EstadoSistema'
 import BrandMark from './components/BrandMark'
 import EducacionFinanciera from './pages/EducacionFinanciera'
-import Supervision from './pages/Supervision'
-import Moderacion from './pages/Moderacion'
+import ChangePassword from './components/ChangePassword'
+
+// Las pantallas de moderación, supervisión y administración se cargan aparte:
+// así su código (y las rutas de la API de administración) no viaja en el
+// paquete principal que descarga cualquier visitante, solo cuando un
+// moderador o supervisor ya autenticado abre esas pantallas.
+const Administracion = lazy(() => import('./pages/Administracion'))
+const Auditoria = lazy(() => import('./pages/Auditoria'))
+const EstadoSistema = lazy(() => import('./pages/EstadoSistema'))
+const Supervision = lazy(() => import('./pages/Supervision'))
+const Moderacion = lazy(() => import('./pages/Moderacion'))
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -63,7 +69,9 @@ function Protected({ user, onLogout, children, roles, exceptRoles, redirectTo = 
   return (
     <Layout user={user} onLogout={onLogout}>
       <ErrorBoundary>
-        {children}
+        <Suspense fallback={<div className="splash"><span className="spinner" /></div>}>
+          {children}
+        </Suspense>
       </ErrorBoundary>
     </Layout>
   )
@@ -89,6 +97,14 @@ export default function App() {
     setUser(null)
   }
 
+  // El backend responde 403 "CambioContrasenaRequerido" a una cuenta con
+  // contraseña débil: se muestra la pantalla de cambio obligatorio.
+  useEffect(() => {
+    const exigirCambio = () => setUser(u => (u ? { ...u, debeCambiarContrasena: true } : u))
+    window.addEventListener('ft:cambio-contrasena-requerido', exigirCambio)
+    return () => window.removeEventListener('ft:cambio-contrasena-requerido', exigirCambio)
+  }, [])
+
   if (loading) return <div className="splash"><BrandMark /><span className="spinner" /></div>
 
   const props = { user }
@@ -99,6 +115,22 @@ export default function App() {
   const moderatorPage = el => <Protected user={user} onLogout={logout} roles={['moderador']}>{el}</Protected>
   const supervisorPage = el => <Protected user={user} onLogout={logout} roles={['supervisor']}>{el}</Protected>
   const supportPage = <Protected user={user} onLogout={logout} exceptRoles={['supervisor']} redirectTo="/supervision"><Soporte {...props} /></Protected>
+
+  if (user?.debeCambiarContrasena) {
+    return (
+      <main className="auth auth-forced">
+        <section className="auth-card">
+          <BrandMark />
+          <h1>Cambia tu contraseña</h1>
+          <p className="muted">{user.email}</p>
+          <ChangePassword user={user} forced onChanged={setUser} />
+          <div className="auth-footer">
+            <button type="button" className="btn btn-ghost btn-block" onClick={logout}>Cerrar sesión</button>
+          </div>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <ErrorBoundary>

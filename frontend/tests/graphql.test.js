@@ -1,20 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { graphqlApi, queryGraphQL } from '../src/services/graphqlApi.js';
+import { graphqlAdminApi } from '../src/services/graphqlAdminApi.js';
 import { API_URL, GRAPHQL_URL } from '../src/services/http.js';
 import { ApiError } from '../src/services/http.js';
 
 test('graphqlApi estructura las consultas GraphQL adecuadamente', () => {
-  assert.equal(typeof graphqlApi.obtenerUsuarios, 'function');
+  assert.equal(typeof graphqlAdminApi.obtenerUsuarios, 'function');
   assert.equal(typeof graphqlApi.obtenerYo, 'function');
   assert.equal(typeof graphqlApi.obtenerMisGrupos, 'function');
   assert.equal(typeof graphqlApi.obtenerGruposArchivados, 'function');
   assert.equal(typeof graphqlApi.obtenerMiPanel, 'function');
-  assert.equal(typeof graphqlApi.obtenerFinanzasUsuario, 'function');
-  assert.equal(typeof graphqlApi.cambiarEstadoUsuario, 'function');
-  assert.equal(typeof graphqlApi.cambiarRolUsuario, 'function');
+  assert.equal(typeof graphqlAdminApi.obtenerFinanzasUsuario, 'function');
+  assert.equal(typeof graphqlAdminApi.cambiarEstadoUsuario, 'function');
+  assert.equal(typeof graphqlAdminApi.cambiarRolUsuario, 'function');
   assert.equal(typeof graphqlApi.archivarGrupo, 'function');
-  assert.equal(typeof graphqlApi.desactivarUsuario, 'function');
+  assert.equal(typeof graphqlAdminApi.desactivarUsuario, 'function');
 });
 
 test('el cliente GraphQL deriva su endpoint correctamente desde API_URL', () => {

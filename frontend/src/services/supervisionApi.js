@@ -1,4 +1,4 @@
-import { graphqlApi } from './graphqlApi'
+import { graphqlAdminApi as graphqlApi } from './graphqlAdminApi'
 import { leerFinanzasDemoLocal } from '../utils/supervision.js'
 
 export const supervisionApi = {
