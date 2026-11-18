@@ -1,82 +1,74 @@
-const path = require('path')
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
+require('dotenv').config();
+const argon2 = require('argon2');
+const { Pool } = require('pg');
 
-const argon2 = require('argon2')
-const { Pool } = require('pg')
-
-if (process.env.NODE_ENV === 'production') {
-  throw new Error('Las cuentas de prueba no se pueden crear en producción.')
+// Estas cuentas tienen contraseñas conocidas (están en el repositorio).
+// Nunca deben crearse en producción: el script se niega salvo que se
+// pida explícitamente y con contraseñas propias definidas en el entorno.
+if (process.env.NODE_ENV === 'production' && process.env.PERMITIR_SEED_ROLES !== 'true') {
+  console.error('❌ seed-roles está bloqueado con NODE_ENV=production.');
+  console.error('   Las cuentas de prueba usan contraseñas públicas. Si de verdad necesitas');
+  console.error('   crearlas, define PERMITIR_SEED_ROLES=true y SEED_PASSWORD_USUARIO,');
+  console.error('   SEED_PASSWORD_MODERADOR y SEED_PASSWORD_SUPERVISOR.');
+  process.exit(1);
+}
+const enProduccion = process.env.NODE_ENV === 'production';
+function contrasena(variable, porDefecto) {
+  const valor = process.env[variable];
+  if (valor) return valor;
+  if (enProduccion) {
+    console.error(`❌ Falta ${variable}: en producción no se usan las contraseñas por defecto.`);
+    process.exit(1);
+  }
+  return porDefecto;
 }
 
-const pool = process.env.DATABASE_URL
-  ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
-    })
-  : new Pool({
-      host: process.env.DB_HOST || 'localhost',
-      port: Number(process.env.DB_PORT || 5432),
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
-      database: process.env.DB_NAME || 'ft_group',
-      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
-    })
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME || 'ft_group'
+});
 
-const usuarios = [
-  {
-    nombre: 'Moderador de prueba',
-    email: 'moderador@ftgroup.test',
-    password: 'Moderador2026!',
-    rol: 'moderador',
-  },
-  {
-    nombre: 'Supervisor de prueba',
-    email: 'supervisor@ftgroup.test',
-    password: 'Supervisor2026!',
-    rol: 'supervisor',
-  },
-  {
-    nombre: 'Usuario común de prueba',
-    email: 'usuario@ftgroup.test',
-    password: 'Usuario2026!',
-    rol: 'usuario',
-  },
-]
-
-async function crearUsuariosDePrueba() {
+async function seed() {
+  console.log('🌱 Ejecutando Seeder de Usuarios y Roles de Prueba...');
   try {
-    for (const usuario of usuarios) {
-      const passwordHash = await argon2.hash(usuario.password, {
-        type: argon2.argon2id,
-        memoryCost: 19456,
-        timeCost: 2,
-        parallelism: 1,
-      })
+    // Roles de prueba
+    const users = [
+      { email: 'usuario@ftgroup.test', nombre: 'Carlos Usuario', password: contrasena('SEED_PASSWORD_USUARIO', 'Usuario2026!'), rol: 'usuario', score: 780, nivel: 'Plata' },
+      { email: 'moderador@ftgroup.test', nombre: 'Ana Moderadora', password: contrasena('SEED_PASSWORD_MODERADOR', 'Moderador2026!'), rol: 'moderador', score: 850, nivel: 'Oro' },
+      { email: 'supervisor@ftgroup.test', nombre: 'Sanny Supervisora', password: contrasena('SEED_PASSWORD_SUPERVISOR', 'Supervisor2026!'), rol: 'supervisor', score: 920, nivel: 'Diamante' }
+    ];
+
+    for (const u of users) {
+      const passwordHash = await argon2.hash(u.password);
+      const usuario = await pool.query(
+        `INSERT INTO usuario (email, nombre, password_hash, rol, estado)
+         VALUES ($1, $2, $3, $4, 'activo')
+         ON CONFLICT (email) DO UPDATE
+         SET nombre = EXCLUDED.nombre, password_hash = EXCLUDED.password_hash,
+             rol = EXCLUDED.rol, estado = 'activo'
+         RETURNING id`,
+        [u.email, u.nombre, passwordHash, u.rol]
+      );
+      
       await pool.query(
-        `INSERT INTO usuario (nombre, email, password_hash, estado, rol)
-         VALUES ($1, $2, $3, 'activo', $4)
-         ON CONFLICT (email) DO UPDATE SET
-           nombre = EXCLUDED.nombre,
-           password_hash = EXCLUDED.password_hash,
-           estado = 'activo',
-           rol = EXCLUDED.rol`,
-        [usuario.nombre, usuario.email, passwordHash, usuario.rol],
-      )
-      console.log(`Cuenta ${usuario.rol} lista: ${usuario.email}`)
+        `INSERT INTO usuario_ft_score (usuario_id, ft_score, nivel) 
+         VALUES ($1, $2, $3)
+         ON CONFLICT (usuario_id) DO UPDATE SET ft_score = $2, nivel = $3;`,
+        [usuario.rows[0].id, u.score, u.nivel]
+      );
     }
-    console.log('Las cuentas de prueba quedaron listas.')
+    console.log('✅ Usuarios de prueba creados exitosamente:');
+    console.log(' - Usuario Común: usuario@ftgroup.test (Rol: usuario)');
+    console.log(' - Moderador: moderador@ftgroup.test (Rol: moderador)');
+    console.log(' - Supervisor: supervisor@ftgroup.test (Rol: supervisor)');
+  } catch (err) {
+    console.error('Error en seeder:', err);
   } finally {
-    await pool.end()
+    await pool.end();
   }
 }
 
-crearUsuariosDePrueba().catch((error) => {
-  const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined
-  console.error(JSON.stringify({
-    timestamp: new Date().toISOString(),
-    level: 'error',
-    type: 'demo_seed_failed',
-    code,
-  }))
-  process.exitCode = 1
-})
+seed();

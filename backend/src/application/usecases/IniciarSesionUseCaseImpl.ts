@@ -8,6 +8,7 @@ import { PasswordHasher } from '../../domain/ports/out/PasswordHasher';
 import { RefreshTokenRepository } from '../../domain/ports/out/RefreshTokenRepository';
 import { TokenService } from '../../domain/ports/out/TokenService';
 import { UsuarioRepository } from '../../domain/ports/out/UsuarioRepository';
+import { cumplePoliticaContrasena } from '../../domain/services/politicaContrasena';
 
 const REFRESH_TOKEN_DIAS_VALIDEZ = 7;
 
@@ -51,6 +52,15 @@ export class IniciarSesionUseCaseImpl implements IniciarSesionUseCase {
       await this.usuarioRepository.actualizarPasswordHash(usuario.id as number, passwordHashActualizado);
     }
 
+    // Cuentas antiguas con contrasenas debiles (por ejemplo, solo espacios):
+    // la politica no se puede revisar sobre el hash, pero si sobre la
+    // contrasena que acaba de escribir la persona. Si no la cumple, la
+    // cuenta queda marcada y el backend solo le permite cambiarla.
+    const debeCambiarContrasena = !cumplePoliticaContrasena(comando.password);
+    if (debeCambiarContrasena !== usuario.debeCambiarContrasena) {
+      await this.usuarioRepository.marcarCambioContrasena(usuario.id as number, debeCambiarContrasena);
+    }
+
     const accessToken = this.tokenService.generarAccessToken({
       usuarioId: usuario.id as number,
       email: usuario.email,
@@ -81,6 +91,7 @@ export class IniciarSesionUseCaseImpl implements IniciarSesionUseCase {
         rol: usuario.rol,
         fechaRegistro: usuario.fechaRegistro,
       },
+      debeCambiarContrasena,
     };
   }
 }

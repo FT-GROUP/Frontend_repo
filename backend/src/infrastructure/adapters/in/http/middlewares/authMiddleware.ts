@@ -11,7 +11,7 @@ import { PayloadTokenAcceso } from '../../../../../domain/ports/out/TokenService
 import { motivoSolicitudAuditoria } from './motivoAuditoria';
 
 export interface RequestAutenticado extends Request {
-  usuario?: { id: number; email: string; rol: RolUsuario };
+  usuario?: { id: number; email: string; rol: RolUsuario; debeCambiarContrasena?: boolean };
 }
 
 /**
@@ -150,6 +150,16 @@ export function auditarActividad(req: RequestAutenticado, res: Response, next: N
  * Traduce el resultado del puerto TokenService al contexto de Express
  * (req.usuario), sin que el dominio conozca nada de HTTP.
  */
+const RUTAS_PERMITIDAS_SIN_CAMBIO_CONTRASENA = new Set([
+  'GET /api/auth/me',
+  'PUT /api/auth/me/contrasena',
+]);
+
+function rutaPermitidaSinCambioContrasena(req: Request): boolean {
+  const ruta = (req.originalUrl || req.url).split('?')[0]!.replace(/\/+$/, '');
+  return RUTAS_PERMITIDAS_SIN_CAMBIO_CONTRASENA.has(`${req.method.toUpperCase()} ${ruta}`);
+}
+
 export async function autenticar(req: RequestAutenticado, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
 
@@ -174,7 +184,22 @@ export async function autenticar(req: RequestAutenticado, res: Response, next: N
       res.status(401).json({ error: 'TokenInvalido', mensaje: 'La sesión ya no es válida.' });
       return;
     }
-    req.usuario = { id: usuario.id as number, email: usuario.email, rol: usuario.rol };
+    req.usuario = {
+      id: usuario.id as number,
+      email: usuario.email,
+      rol: usuario.rol,
+      debeCambiarContrasena: usuario.debeCambiarContrasena,
+    };
+    // Una cuenta con contrasena debil solo puede ver su perfil, cambiar la
+    // contrasena y cerrar sesion. El bloqueo vive en el backend: ocultar
+    // pantallas en el frontend no impediria llamar la API directamente.
+    if (usuario.debeCambiarContrasena && !rutaPermitidaSinCambioContrasena(req)) {
+      res.status(403).json({
+        error: 'CambioContrasenaRequerido',
+        mensaje: 'Debes cambiar tu contrasena antes de continuar.',
+      });
+      return;
+    }
     next();
   } catch (error) {
     next(error);
@@ -201,7 +226,8 @@ export async function autenticarOpcional(req: RequestAutenticado, _res: Response
   try {
     const payload = tokenServiceInstancia.verificarAccessToken(token);
     const usuario = await usuarioRepositoryInstancia.buscarPorId(payload.usuarioId);
-    if (usuario && usuario.puedeIniciarSesion()) {
+    // Con cambio de contrasena pendiente, GraphQL trata la peticion como anonima.
+    if (usuario && usuario.puedeIniciarSesion() && !usuario.debeCambiarContrasena) {
       req.usuario = { id: usuario.id as number, email: usuario.email, rol: usuario.rol };
     }
   } catch {

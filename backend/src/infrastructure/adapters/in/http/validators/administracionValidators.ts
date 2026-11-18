@@ -24,6 +24,11 @@ export const actualizarGrupoAdminSchema = z.object({
   estado: z.enum(['activo', 'archivado']).optional(),
 });
 
+export const supervisionFinanzasQuerySchema = z.object({
+  limite: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).max(1000000).default(0),
+});
+
 export type CambiarEstadoAdminInput = z.infer<typeof cambiarEstadoAdminSchema>;
 export type CambiarRolAdminInput = z.infer<typeof cambiarRolAdminSchema>;
 export type CrearAgrupacionAdminInput = z.infer<typeof crearAgrupacionAdminSchema>;

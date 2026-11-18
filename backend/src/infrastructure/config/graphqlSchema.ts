@@ -3,13 +3,125 @@ import {
   GraphQLObjectType,
   GraphQLString,
   GraphQLInt,
+  GraphQLFloat,
   GraphQLList,
   GraphQLNonNull,
   GraphQLID,
   GraphQLEnumType,
+  GraphQLError,
 } from 'graphql';
-import { pool, poolHistorico } from '../adapters/out/persistence/postgres/db';
-import { administracionController, grupoGastoController } from './container';
+import { administracionService, grupoGastoService, obtenerPerfilUseCase } from './container';
+
+type GraphQLUsuario = { id: number; rol: 'usuario' | 'moderador' | 'supervisor' };
+type Registro = Record<string, unknown> & {
+  id?: number | string;
+  nombre?: string;
+  rol?: string;
+  email?: string;
+  monto_total?: number | string;
+  acreedorId?: number | string;
+  deudorId?: number | string;
+  monto?: number | string;
+};
+
+function registro(value: unknown): Registro {
+  return typeof value === 'object' && value !== null ? value as Registro : {};
+}
+
+function numero(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function cargarGruposUsuario(usuarioId: number) {
+  const grupos = await grupoGastoService.listarGrupos(usuarioId);
+  const detalles = await Promise.all(grupos.map(async (grupo) => {
+    const grupoId = Number(grupo.id);
+    const [miembrosRaw, gastosRaw, balancesRaw] = await Promise.all([
+      grupoGastoService.listarIntegrantes(usuarioId, grupoId),
+      grupoGastoService.listarGastos(usuarioId, grupoId),
+      grupoGastoService.listarBalances(usuarioId, grupoId),
+    ]);
+    const miembros = miembrosRaw.map(registro);
+    const gastos = gastosRaw.map(registro);
+    const balances = balancesRaw.map(registro);
+    const tasaCop = numero(grupo.tasaCop) || 1;
+    const miBalanceGrupo = balances.reduce((total, balance) => {
+      if (numero(balance.acreedorId) === usuarioId) return total + numero(balance.monto);
+      if (numero(balance.deudorId) === usuarioId) return total - numero(balance.monto);
+      return total;
+    }, 0);
+    const detalle = {
+      ...grupo,
+      tasaCop,
+      icono: 'users',
+      ciudad: null,
+      totalGastos: gastos.reduce((total, gasto) => total + numero(gasto.monto_total) * tasaCop, 0),
+      numGastos: gastos.length,
+      miBalance: miBalanceGrupo * tasaCop,
+      miembros,
+    };
+    const liquidaciones = balances.map((balance) => {
+      const de = numero(balance.deudorId);
+      const para = numero(balance.acreedorId);
+      return {
+        grupo_id: String(grupo.id),
+        grupo: grupo.nombre,
+        de,
+        para,
+        monto: numero(balance.monto) * tasaCop,
+        montoGrupo: numero(balance.monto),
+        moneda: grupo.moneda || 'COP',
+        tasaCop,
+        deUsuario: miembros.find((miembro) => numero(miembro.id) === de),
+        paraUsuario: miembros.find((miembro) => numero(miembro.id) === para),
+      };
+    });
+    return { detalle, liquidaciones };
+  }));
+  return {
+    grupos: detalles.map(({ detalle }) => detalle),
+    liquidaciones: detalles.flatMap(({ liquidaciones }) => liquidaciones),
+  };
+}
+
+function exigirRoles(usuario: { rol: string } | undefined, ...roles: string[]): void {
+  if (!usuario || !roles.includes(usuario.rol)) {
+    throw new GraphQLError('No tienes permisos para consultar este módulo.', {
+      extensions: { code: usuario ? 'FORBIDDEN' : 'UNAUTHENTICATED' },
+    });
+  }
+}
+
+function parsearId(value: unknown, tipo: string): number {
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new GraphQLError(`Identificador de ${tipo} inválido.`, {
+      extensions: { code: 'BAD_USER_INPUT' },
+    });
+  }
+  return id;
+}
+
+function exigirUsuario(context: { usuario?: GraphQLUsuario }): GraphQLUsuario {
+  if (!context?.usuario) {
+    throw new GraphQLError('No autenticado.', { extensions: { code: 'UNAUTHENTICATED' } });
+  }
+  return context.usuario;
+}
+
+function validarPaginacion(limite: number, offset: number): void {
+  if (!Number.isInteger(limite) || limite < 1 || limite > 100) {
+    throw new GraphQLError('El límite debe estar entre 1 y 100.', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    });
+  }
+  if (!Number.isInteger(offset) || offset < 0 || offset > 1_000_000) {
+    throw new GraphQLError('El desplazamiento debe estar entre 0 y 1000000.', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    });
+  }
+}
 
 // --- ENUMS & TYPES ---
 
@@ -27,6 +139,7 @@ const EstadoUsuarioEnum = new GraphQLEnumType({
   values: {
     activo: { value: 'activo' },
     inactivo: { value: 'inactivo' },
+    bloqueado: { value: 'bloqueado' },
   },
 });
 
@@ -46,9 +159,19 @@ const UsuarioType = new GraphQLObjectType({
     origenBaseDatos: {
       type: GraphQLString,
       description: 'Identifica si el dato reside en la base de datos Activa u Host/Historica',
-      resolve: (u) => (u.estado === 'activo' ? 'Base de Datos Activos (OLTP Principal)' : 'Base de Datos Inactivos (Cold Storage)'),
+      resolve: (u) => (u.estado === 'inactivo' ? 'Base de Datos Inactivos (Cold Storage)' : 'Base de Datos Activos (OLTP Principal)'),
     },
   }),
+});
+
+const MiembroGrupoType = new GraphQLObjectType({
+  name: 'MiembroGrupo',
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    nombre: { type: new GraphQLNonNull(GraphQLString) },
+    email: { type: GraphQLString },
+    rol: { type: GraphQLString },
+  },
 });
 
 const GrupoType = new GraphQLObjectType({
@@ -59,7 +182,16 @@ const GrupoType = new GraphQLObjectType({
     nombre: { type: new GraphQLNonNull(GraphQLString) },
     descripcion: { type: GraphQLString },
     rol: { type: GraphQLString },
+    moneda: { type: GraphQLString },
+    tasaCop: { type: GraphQLFloat },
+    instruccionesPago: { type: GraphQLString },
     miembrosActivos: { type: GraphQLInt },
+    icono: { type: GraphQLString },
+    ciudad: { type: GraphQLString },
+    totalGastos: { type: GraphQLFloat },
+    numGastos: { type: GraphQLInt },
+    miBalance: { type: GraphQLFloat },
+    miembros: { type: new GraphQLList(MiembroGrupoType) },
     fechaCreacion: {
       type: GraphQLString,
       resolve: (g) => (g.fechaCreacion ? new Date(g.fechaCreacion).toISOString() : null),
@@ -71,14 +203,105 @@ const GrupoType = new GraphQLObjectType({
   }),
 });
 
-const ResumenPanelType = new GraphQLObjectType({
-  name: 'ResumenPanel',
-  description: 'KPIs y consolidado financiero del usuario',
-  fields: () => ({
-    totalGastos: { type: GraphQLInt },
-    totalDeuda: { type: GraphQLInt },
-    balanceNeto: { type: GraphQLInt },
-  }),
+const LiquidacionType = new GraphQLObjectType({
+  name: 'Liquidacion',
+  fields: {
+    grupo_id: { type: GraphQLID },
+    grupo: { type: GraphQLString },
+    de: { type: GraphQLID },
+    para: { type: GraphQLID },
+    monto: { type: GraphQLFloat },
+    montoGrupo: { type: GraphQLFloat },
+    moneda: { type: GraphQLString },
+    tasaCop: { type: GraphQLFloat },
+    deUsuario: { type: MiembroGrupoType },
+    paraUsuario: { type: MiembroGrupoType },
+  },
+});
+
+const MiPanelType = new GraphQLObjectType({
+  name: 'MiPanel',
+  fields: {
+    grupos: { type: new GraphQLList(GrupoType) },
+    teDeben: { type: GraphQLFloat },
+    debes: { type: GraphQLFloat },
+    balance: { type: GraphQLFloat },
+    liquidaciones: { type: new GraphQLList(LiquidacionType) },
+  },
+});
+
+const SupervisionResumenType = new GraphQLObjectType({
+  name: 'SupervisionResumen',
+  fields: {
+    grupos: { type: new GraphQLNonNull(GraphQLInt) },
+    gastos: { type: new GraphQLNonNull(GraphQLInt) },
+    montoPagado: { type: new GraphQLNonNull(GraphQLString) },
+    montoAsignado: { type: new GraphQLNonNull(GraphQLString) },
+    montoPendiente: { type: new GraphQLNonNull(GraphQLString) },
+  },
+});
+
+const SupervisionGrupoType = new GraphQLObjectType({
+  name: 'SupervisionGrupo',
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    nombre: { type: new GraphQLNonNull(GraphQLString) },
+    estado: { type: new GraphQLNonNull(GraphQLString) },
+    rol: { type: new GraphQLNonNull(GraphQLString) },
+    fechaUnion: {
+      type: GraphQLString,
+      resolve: (grupo) => grupo.fechaUnion ? new Date(grupo.fechaUnion).toISOString() : null,
+    },
+    fechaCreacion: {
+      type: GraphQLString,
+      resolve: (grupo) => grupo.fechaCreacion ? new Date(grupo.fechaCreacion).toISOString() : null,
+    },
+    numeroGastos: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const SupervisionGastoType = new GraphQLObjectType({
+  name: 'SupervisionGasto',
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    grupoId: { type: new GraphQLNonNull(GraphQLID) },
+    grupo: { type: new GraphQLNonNull(GraphQLString) },
+    pagadorId: { type: new GraphQLNonNull(GraphQLID) },
+    pagador: { type: new GraphQLNonNull(GraphQLString) },
+    descripcion: { type: new GraphQLNonNull(GraphQLString) },
+    montoTotal: { type: new GraphQLNonNull(GraphQLString) },
+    fechaGasto: {
+      type: new GraphQLNonNull(GraphQLString),
+      resolve: (gasto) => new Date(gasto.fechaGasto).toISOString(),
+    },
+    categoria: { type: new GraphQLNonNull(GraphQLString) },
+    montoAsignado: { type: GraphQLString },
+    estadoPago: { type: GraphQLString },
+    fechaPago: {
+      type: GraphQLString,
+      resolve: (gasto) => gasto.fechaPago ? new Date(gasto.fechaPago).toISOString() : null,
+    },
+  },
+});
+
+const SupervisionPaginacionType = new GraphQLObjectType({
+  name: 'SupervisionPaginacion',
+  fields: {
+    limite: { type: new GraphQLNonNull(GraphQLInt) },
+    offset: { type: new GraphQLNonNull(GraphQLInt) },
+    total: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const SupervisionFinancieraType = new GraphQLObjectType({
+  name: 'SupervisionFinanciera',
+  fields: {
+    usuario: { type: new GraphQLNonNull(UsuarioType) },
+    resumen: { type: new GraphQLNonNull(SupervisionResumenType) },
+    grupos: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(SupervisionGrupoType))) },
+    gastos: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(SupervisionGastoType))) },
+    paginacion: { type: new GraphQLNonNull(SupervisionPaginacionType) },
+  },
 });
 
 // --- ROOT QUERY ---
@@ -93,48 +316,29 @@ const RootQuery = new GraphQLObjectType({
         estado: { type: EstadoUsuarioEnum },
       },
       resolve: async (_parent, args, context) => {
-        if (!context?.usuario) throw new Error('No autenticado para consultar usuarios.');
-        if (!['moderador', 'supervisor'].includes(context.usuario.rol)) {
-          throw new Error('No autorizado para consultar usuarios.');
-        }
-        
-        // Si pide activos exclusivamente, consultamos solo el pool de activos
-        if (args.estado === 'activo') {
-          const res = await pool.query(
-            `SELECT id, nombre, email, 'activo' AS estado, rol, fecha_registro AS "fechaRegistro"
-             FROM usuario WHERE estado = 'activo' ORDER BY id DESC`
-          );
-          return res.rows;
-        }
+        exigirRoles(context?.usuario, 'moderador', 'supervisor');
+        const usuarios = await administracionService.listarUsuarios();
+        return args.estado ? usuarios.filter((usuario) => usuario.estado === args.estado) : usuarios;
+      },
+    },
 
-        // Si pide inactivos, consultamos el pool historico de inactivos
-        if (args.estado === 'inactivo') {
-          try {
-            const res = await poolHistorico.query(
-              `SELECT id, nombre, email, 'inactivo' AS estado, rol, fecha_registro AS "fechaRegistro"
-               FROM historico.usuario_inactivo ORDER BY id DESC`
-            );
-            return res.rows;
-          } catch {
-            return [];
-          }
-        }
-
-        // Si no especifica filtro, consultamos ambas bases y las unificamos
-        const activos = await pool.query(
-          `SELECT id, nombre, email, 'activo' AS estado, rol, fecha_registro AS "fechaRegistro"
-           FROM usuario WHERE estado = 'activo'`
+    finanzasUsuario: {
+      type: SupervisionFinancieraType,
+      args: {
+        usuarioId: { type: new GraphQLNonNull(GraphQLID) },
+        limite: { type: GraphQLInt, defaultValue: 50 },
+        offset: { type: GraphQLInt, defaultValue: 0 },
+      },
+      resolve: async (_parent, args, context) => {
+        const actor = exigirUsuario(context);
+        exigirRoles(actor, 'supervisor');
+        validarPaginacion(args.limite, args.offset);
+        return administracionService.consultarFinanzasUsuario(
+          actor.rol,
+          parsearId(args.usuarioId, 'usuario'),
+          args.limite,
+          args.offset,
         );
-        let inactivos: any[] = [];
-        try {
-          const resInact = await poolHistorico.query(
-            `SELECT id, nombre, email, 'inactivo' AS estado, rol, fecha_registro AS "fechaRegistro"
-             FROM historico.usuario_inactivo`
-          );
-          inactivos = resInact.rows;
-        } catch {}
-
-        return [...activos.rows, ...inactivos];
       },
     },
 
@@ -142,18 +346,25 @@ const RootQuery = new GraphQLObjectType({
     misGrupos: {
       type: new GraphQLList(GrupoType),
       resolve: async (_parent, _args, context) => {
-        if (!context?.usuario) throw new Error('Se requiere autenticacion JWT.');
-        const res = await pool.query(
-          `SELECT g.id, g.nombre, g.descripcion, m.rol, g.fecha_creacion AS "fechaCreacion",
-                  COUNT(mi.id)::int AS "miembrosActivos"
-           FROM grupo g
-           JOIN miembro_grupo m ON m.grupo_id = g.id AND m.usuario_id = $1 AND m.estado = 'activo'
-           JOIN miembro_grupo mi ON mi.grupo_id = g.id AND mi.estado = 'activo'
-           WHERE g.estado = 'activo'
-           GROUP BY g.id, g.nombre, g.descripcion, m.rol, g.fecha_creacion`,
-          [context.usuario.id]
-        );
-        return res.rows;
+        exigirRoles(context?.usuario, 'usuario');
+        const usuario = context.usuario as GraphQLUsuario;
+        return (await cargarGruposUsuario(usuario.id)).grupos;
+      },
+    },
+
+    miPanel: {
+      type: MiPanelType,
+      resolve: async (_parent, _args, context) => {
+        exigirRoles(context?.usuario, 'usuario');
+        const usuario = context.usuario as GraphQLUsuario;
+        const { grupos, liquidaciones } = await cargarGruposUsuario(usuario.id);
+        const teDeben = liquidaciones
+          .filter((liquidacion) => numero(liquidacion.para) === usuario.id)
+          .reduce((total, liquidacion) => total + numero(liquidacion.monto), 0);
+        const debes = liquidaciones
+          .filter((liquidacion) => numero(liquidacion.de) === usuario.id)
+          .reduce((total, liquidacion) => total + numero(liquidacion.monto), 0);
+        return { grupos, liquidaciones, teDeben, debes, balance: teDeben - debes };
       },
     },
 
@@ -161,18 +372,9 @@ const RootQuery = new GraphQLObjectType({
     gruposArchivados: {
       type: new GraphQLList(GrupoType),
       resolve: async (_parent, _args, context) => {
-        if (!context?.usuario) throw new Error('Se requiere autenticacion JWT.');
-        try {
-          const res = await poolHistorico.query(
-            `SELECT id, nombre, descripcion, 'archivado' AS estado, fecha_creacion AS "fechaCreacion"
-             FROM historico.grupo_archivado
-             WHERE creado_por = $1`,
-            [context.usuario.id]
-          );
-          return res.rows;
-        } catch {
-          return [];
-        }
+        exigirRoles(context?.usuario, 'usuario');
+        const usuario = context.usuario as GraphQLUsuario;
+        return grupoGastoService.listarGruposArchivados(usuario.id);
       },
     },
 
@@ -181,12 +383,8 @@ const RootQuery = new GraphQLObjectType({
       type: UsuarioType,
       resolve: async (_parent, _args, context) => {
         if (!context?.usuario) return null;
-        const res = await pool.query(
-          `SELECT id, nombre, email, estado, rol, fecha_registro AS "fechaRegistro"
-           FROM usuario WHERE id = $1 LIMIT 1`,
-          [context.usuario.id]
-        );
-        return res.rows[0] || null;
+        const usuario = context.usuario as GraphQLUsuario;
+        return obtenerPerfilUseCase.ejecutar(usuario.id);
       },
     },
   },
@@ -204,38 +402,10 @@ const RootMutation = new GraphQLObjectType({
         grupoId: { type: new GraphQLNonNull(GraphQLID) },
       },
       resolve: async (_parent, args, context) => {
-        if (!context?.usuario) throw new Error('No autorizado.');
-        const id = parseInt(args.grupoId, 10);
-
-        // Personal de la plataforma o administrador activo de ese grupo.
-        if (!['moderador', 'supervisor'].includes(context.usuario.rol)) {
-          const administrador = await pool.query(
-            `SELECT 1 FROM miembro_grupo
-             WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'activo' AND rol = 'administrador'`,
-            [id, context.usuario.id]
-          );
-          if (administrador.rowCount === 0) throw new Error('No autorizado.');
-        }
-
-        // 1. Obtener datos del grupo activo
-        const grupoRes = await pool.query(`SELECT * FROM grupo WHERE id = $1`, [id]);
-        if (grupoRes.rowCount === 0) throw new Error('Grupo no encontrado.');
-        const grupo = grupoRes.rows[0];
-
-        // 2. Insertar en base de datos historica
-        try {
-          await poolHistorico.query(
-            `INSERT INTO historico.grupo_archivado (id, nombre, descripcion, creado_por, fecha_creacion)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (id) DO NOTHING`,
-            [grupo.id, grupo.nombre, grupo.descripcion, grupo.creado_por, grupo.fecha_creacion]
-          );
-        } catch (e) {
-          console.error('Error insertando en historico:', e);
-        }
-
-        // 3. Actualizar estado en activa a archivado
-        await pool.query(`UPDATE grupo SET estado = 'archivado' WHERE id = $1`, [id]);
+        exigirRoles(context?.usuario, 'usuario');
+        const usuario = context.usuario as GraphQLUsuario;
+        const id = parsearId(args.grupoId, 'grupo');
+        await grupoGastoService.archivarGrupo(usuario.id, id);
         return `Grupo #${id} archivado y trasladado a la base de datos historica exitosamente.`;
       },
     },
@@ -247,56 +417,59 @@ const RootMutation = new GraphQLObjectType({
         usuarioId: { type: new GraphQLNonNull(GraphQLID) },
       },
       resolve: async (_parent, args, context) => {
-        if (!context?.usuario || context.usuario.rol !== 'supervisor') {
-          throw new Error('Solo un supervisor puede desactivar usuarios.');
-        }
-        const id = parseInt(args.usuarioId, 10);
-
-        // Mismas reglas de gobierno que /api/administracion. Sin ellas,
-        // esta mutacion seria un camino para dejar el sistema sin ningun
-        // supervisor activo, algo que no se puede revertir desde la
-        // aplicacion.
-        if (id === context.usuario.id) {
-          throw new Error('No puede desactivar su propia cuenta.');
-        }
-
-        const res = await pool.query(`SELECT * FROM usuario WHERE id = $1`, [id]);
-        if (res.rowCount === 0) throw new Error('Usuario no encontrado.');
-        const u = res.rows[0];
-
-        if (u.estado === 'inactivo') {
-          throw new Error('La cuenta ya esta desactivada.');
-        }
-
-        if (u.rol === 'supervisor') {
-          const activos = await pool.query<{ total: string }>(
-            `SELECT COUNT(*)::text AS total FROM usuario
-             WHERE rol = 'supervisor' AND estado = 'activo'`,
-          );
-          if (Number(activos.rows[0]?.total ?? 0) <= 1) {
-            throw new Error('Debe quedar al menos un supervisor activo.');
-          }
-        }
-
-        // El guardado en el historico es parte de la operacion, no un
-        // extra: si falla, no se desactiva la cuenta. Antes el error se
-        // descartaba y el registro se perdia en silencio.
-        await poolHistorico.query(
-          `INSERT INTO historico.usuario_inactivo (id, nombre, email, rol, fecha_registro)
-           VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (id) DO UPDATE SET fecha_desactivacion = NOW()`,
-          [u.id, u.nombre, u.email, u.rol, u.fecha_registro]
+        const actor = exigirUsuario(context);
+        exigirRoles(actor, 'supervisor');
+        const id = parsearId(args.usuarioId, 'usuario');
+        const u = await administracionService.cambiarEstado(
+          actor.id,
+          actor.rol,
+          id,
+          'inactivo',
         );
-
-        await pool.query(`UPDATE usuario SET estado = 'inactivo' WHERE id = $1`, [id]);
         return {
           id: u.id,
           nombre: u.nombre,
           email: u.email,
           rol: u.rol,
           estado: 'inactivo',
-          fechaRegistro: u.fecha_registro,
+          fechaRegistro: u.fechaRegistro,
         };
+      },
+    },
+
+    cambiarEstadoUsuario: {
+      type: new GraphQLNonNull(UsuarioType),
+      args: {
+        usuarioId: { type: new GraphQLNonNull(GraphQLID) },
+        estado: { type: new GraphQLNonNull(EstadoUsuarioEnum) },
+      },
+      resolve: async (_parent, args, context) => {
+        const actor = exigirUsuario(context);
+        exigirRoles(actor, 'moderador', 'supervisor');
+        return administracionService.cambiarEstado(
+          actor.id,
+          actor.rol,
+          parsearId(args.usuarioId, 'usuario'),
+          args.estado,
+        );
+      },
+    },
+
+    cambiarRolUsuario: {
+      type: new GraphQLNonNull(UsuarioType),
+      args: {
+        usuarioId: { type: new GraphQLNonNull(GraphQLID) },
+        rol: { type: new GraphQLNonNull(RolUsuarioEnum) },
+      },
+      resolve: async (_parent, args, context) => {
+        const actor = exigirUsuario(context);
+        exigirRoles(actor, 'supervisor');
+        return administracionService.cambiarRol(
+          actor.id,
+          actor.rol,
+          parsearId(args.usuarioId, 'usuario'),
+          args.rol,
+        );
       },
     },
   },

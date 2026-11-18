@@ -6,6 +6,7 @@ import {
   cerrarSesionUseCase,
   obtenerPerfilUseCase,
   actualizarPerfilUseCase,
+  cambiarContrasenaUseCase,
   desactivarCuentaUseCase,
   activarCuentaUseCase,
   auditoriaService,
@@ -18,6 +19,7 @@ import {
   IniciarSesionInput,
   RefrescarTokenInput,
   ActualizarPerfilInput,
+  CambiarContrasenaInput,
 } from '../validators/authValidators';
 
 function registrarEventoAcceso(
@@ -138,7 +140,10 @@ export class AuthController {
   ) {
     try {
       const resultado = await obtenerPerfilUseCase.ejecutar(req.usuario!.id);
-      res.status(200).json({ usuario: resultado });
+      res.status(200).json({
+        usuario: resultado,
+        debeCambiarContrasena: Boolean(req.usuario!.debeCambiarContrasena),
+      });
     } catch (error) {
       next(error);
     }
@@ -161,6 +166,29 @@ export class AuthController {
       res.status(200).json({
         mensaje: 'Perfil actualizado exitosamente.',
         usuario: resultado,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PUT /api/auth/me/contrasena — cambia la contrasena del usuario
+   * autenticado. Exige la actual y cierra las demas sesiones.
+   */
+  static async cambiarContrasena(
+    req: RequestAutenticado & { body: CambiarContrasenaInput },
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      await cambiarContrasenaUseCase.ejecutar({
+        usuarioId: req.usuario!.id,
+        passwordActual: req.body.passwordActual,
+        passwordNueva: req.body.passwordNueva,
+      });
+      res.status(200).json({
+        mensaje: 'Contrasena actualizada. Inicia sesion de nuevo con la nueva contrasena.',
       });
     } catch (error) {
       next(error);

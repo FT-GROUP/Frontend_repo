@@ -63,6 +63,20 @@ export class AdministracionController {
     }
   };
 
+  consultarFinanzasUsuario = async (req: RequestAutenticado, res: Response, next: NextFunction) => {
+    try {
+      const finanzas = await this.service.consultarFinanzasUsuario(
+        req.usuario!.rol,
+        Number(req.params.id),
+        Number(req.query.limite ?? 50),
+        Number(req.query.offset ?? 0),
+      );
+      res.status(200).json({ supervision: finanzas });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   cambiarEstado = async (
     req: RequestAutenticado & { body: CambiarEstadoAdminInput },
     res: Response,

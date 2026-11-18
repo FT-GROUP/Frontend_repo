@@ -3,7 +3,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: ft_group_postgres
+    container_name: ft_group_actualizado_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres

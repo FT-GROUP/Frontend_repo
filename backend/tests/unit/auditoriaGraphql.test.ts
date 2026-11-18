@@ -99,7 +99,7 @@ describe('auditoria de operaciones GraphQL', () => {
 
     it('da un motivo generico si no se pudo identificar la operacion', () => {
       expect(motivoSolicitudAuditoria('POST', '/graphql', null))
-        .toBe('Ejecutar una operacion sobre la API GraphQL.');
+        .toBe('Ejecutar una consulta o mutación GraphQL autorizada.');
     });
 
     it('no altera los motivos de las rutas REST', () => {

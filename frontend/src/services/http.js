@@ -2,6 +2,10 @@
 // intenta renovar la sesión una vez con /auth/refresh antes de fallar.
 
 export const API_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:3000/api'
+const API_BASE_URL = API_URL.replace(/\/+$/, '')
+export const GRAPHQL_URL = API_BASE_URL.endsWith('/api')
+  ? `${API_BASE_URL.slice(0, -4)}/graphql`
+  : `${API_BASE_URL}/graphql`
 
 const KEYS = { access: 'ft_access_token', refresh: 'ft_refresh_token' }
 
@@ -33,13 +37,14 @@ const TIMEOUT_POR_DEFECTO = 2500
 
 async function rawRequest(path, { method = 'GET', body, auth = false, timeout = TIMEOUT_POR_DEFECTO } = {}) {
   const headers = { 'Content-Type': 'application/json' }
-  if (auth && tokens.access) headers.Authorization = `Bearer ${tokens.access}`
+  if (auth && tokens.access) headers.Authorization = 'Bearer ' + tokens.access
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeout)
   let response
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    const url = /^https?:\/\//i.test(path) ? path : `${API_URL}${path}`
+    response = await fetch(url, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -54,6 +59,9 @@ async function rawRequest(path, { method = 'GET', body, auth = false, timeout = 
   if (response.status === 204) return null
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
+    if (response.status === 403 && data.error === 'CambioContrasenaRequerido' && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ft:cambio-contrasena-requerido'))
+    }
     const detalle = (Array.isArray(data.errores) && data.errores[0]?.mensaje) || (Array.isArray(data.detalles) && data.detalles[0]?.mensaje)
     throw new ApiError(
       detalle || data.mensaje || data.message || 'No fue posible completar la solicitud.',

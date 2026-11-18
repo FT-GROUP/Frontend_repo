@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { createHandler } from 'graphql-http/lib/use/express';
 import { graphqlSchema } from './infrastructure/config/graphqlSchema';
+import { formatGraphQLError } from './infrastructure/config/graphqlErrorFormatter';
 import authRoutes from './infrastructure/adapters/in/http/routes/authRoutes';
 import grupoRoutes from './infrastructure/adapters/in/http/routes/grupoRoutes';
 import reporteRoutes from './infrastructure/adapters/in/http/routes/reporteRoutes';
@@ -15,6 +16,8 @@ import estadoRoutes from './infrastructure/adapters/in/http/routes/estadoRoutes'
 import iaRoutes from './infrastructure/adapters/in/http/routes/iaRoutes';
 import soporteRoutes from './infrastructure/adapters/in/http/routes/soporteRoutes';
 import asistenteRoutes from './infrastructure/adapters/in/http/routes/asistenteRoutes';
+import contratosRoutes from './infrastructure/adapters/in/http/routes/contratosRoutes';
+import educacionRoutes from './infrastructure/adapters/in/http/routes/educacionRoutes';
 import { auditarActividad, autenticarOpcional } from './infrastructure/adapters/in/http/middlewares/authMiddleware';
 import { errorHandler, rutaNoEncontrada } from './infrastructure/adapters/in/http/middlewares/errorHandler';
 import { env } from './infrastructure/config/env';
@@ -71,6 +74,7 @@ export function crearApp(): Application {
     autenticarOpcional,
     createHandler({
       schema: graphqlSchema,
+      formatError: formatGraphQLError,
       context: (req: any) => ({
         usuario: req.raw.usuario,
         headers: req.raw.headers,
@@ -89,6 +93,8 @@ export function crearApp(): Application {
   app.use('/api/ia', iaRoutes);
   app.use('/api/soporte', soporteRoutes);
   app.use('/api/asistente', asistenteRoutes);
+  app.use('/api/contratos', contratosRoutes);
+  app.use('/api/educacion', educacionRoutes);
 
   // --- 404 y manejo centralizado de errores ---
   app.use(rutaNoEncontrada);

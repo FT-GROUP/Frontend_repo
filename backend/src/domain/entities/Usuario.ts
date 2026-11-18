@@ -20,6 +20,8 @@ export interface UsuarioProps {
   fechaRegistro?: Date;
   estado?: EstadoUsuario;
   rol?: RolUsuario;
+  /** La cuenta tiene una contrasena que no cumple la politica y debe cambiarla. */
+  debeCambiarContrasena?: boolean;
 }
 
 export class Usuario {
@@ -31,6 +33,7 @@ export class Usuario {
   readonly fechaRegistro: Date;
   estado: EstadoUsuario;
   rol: RolUsuario;
+  debeCambiarContrasena: boolean;
 
   private constructor(props: UsuarioProps) {
     this.id = props.id;
@@ -41,6 +44,7 @@ export class Usuario {
     this.fechaRegistro = props.fechaRegistro ?? new Date();
     this.estado = props.estado ?? 'activo';
     this.rol = props.rol ?? 'usuario';
+    this.debeCambiarContrasena = props.debeCambiarContrasena ?? false;
   }
 
   /**

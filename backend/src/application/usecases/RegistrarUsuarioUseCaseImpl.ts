@@ -1,5 +1,6 @@
 import { Usuario } from '../../domain/entities/Usuario';
-import { EmailYaRegistradoError, ValidacionError } from '../../domain/errors/DomainErrors';
+import { ContrasenaNoValidaError, EmailYaRegistradoError, ValidacionError } from '../../domain/errors/DomainErrors';
+import { incumplimientosContrasena } from '../../domain/services/politicaContrasena';
 import {
   RegistrarUsuarioComando,
   RegistrarUsuarioResultado,
@@ -32,6 +33,11 @@ export class RegistrarUsuarioUseCaseImpl implements RegistrarUsuarioUseCase {
     if (yaExiste) {
       throw new EmailYaRegistradoError(emailNormalizado);
     }
+
+    // Segunda barrera: el validador HTTP ya aplica la politica, pero el
+    // dominio no depende de que todos los adaptadores de entrada lo hagan.
+    const errores = incumplimientosContrasena(comando.password);
+    if (errores.length > 0) throw new ContrasenaNoValidaError(errores[0]!);
 
     const passwordHash = await this.passwordHasher.hash(comando.password);
 
