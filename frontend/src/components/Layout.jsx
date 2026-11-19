@@ -66,6 +66,10 @@ export default function Layout({ user, onLogout, children }) {
       : NAV_BASE
 
   useEffect(() => { setOpen(false); window.scrollTo(0, 0) }, [location.pathname])
+  // En celular la barra inferior se desplaza: mantiene visible la pestaña activa.
+  useEffect(() => {
+    document.querySelector('.tabbar .tab.active')?.scrollIntoView({ block: 'nearest', inline: 'center' })
+  }, [location.pathname])
   useEffect(() => {
     document.body.classList.toggle('no-scroll', open)
     return () => document.body.classList.remove('no-scroll')

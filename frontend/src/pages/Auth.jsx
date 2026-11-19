@@ -80,7 +80,7 @@ export function Login({ onLogin }) {
       <form className="form" onSubmit={submit}>
         <div className="field">
           <label htmlFor="email">{t('field_email')}</label>
-          <input id="email" name="email" type="email" value={form.email} onChange={change} autoComplete="email" required />
+          <input id="email" name="email" type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" value={form.email} onChange={change} autoComplete="email" required />
         </div>
         <div className="field">
           <label htmlFor="password">{t('field_password')}</label>
@@ -124,7 +124,7 @@ export function Register() {
         </div>
         <div className="field">
           <label htmlFor="email">{t('field_email')}</label>
-          <input id="email" name="email" type="email" value={form.email} onChange={change} maxLength={150} autoComplete="email" required />
+          <input id="email" name="email" type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" value={form.email} onChange={change} maxLength={150} autoComplete="email" required />
         </div>
         <div className="field">
           <label htmlFor="telefono">{t('field_phone')} <span className="muted">{t('field_optional')}</span></label>

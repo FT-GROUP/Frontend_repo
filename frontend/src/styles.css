@@ -118,7 +118,7 @@ h1, h2, h3 { margin: 0; }
   background: var(--accent-soft); color: var(--accent-hi); font-size: 10px; font-weight: 800;
   letter-spacing: .5px; white-space: nowrap;
 }
-.content { width: 100%; max-width: 1080px; padding: 32px 28px 56px; }
+.content { width: 100%; max-width: 1080px; margin-inline: auto; padding: 32px 28px 56px; }
 .tabbar, .scrim { display: none; }
 
 /* ---------- Encabezados ---------- */
@@ -228,7 +228,7 @@ h1, h2, h3 { margin: 0; }
 .audit-results { margin-top: 28px; }
 .audit-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .audit-list-head > div { display: grid; gap: 2px; }
-.audit-table-wrap { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.audit-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .audit-table { width: 100%; border-collapse: collapse; }
 .audit-table th { padding: 12px 15px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; letter-spacing: 1px; text-align: left; text-transform: uppercase; }
 .audit-table td { padding: 13px 15px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 12px; }
@@ -1037,3 +1037,84 @@ body[data-theme="vivid"] {
 
 /* Pantalla de cambio obligatorio de contraseña: sin panel lateral, centrada */
 .auth.auth-forced { grid-template-columns: 1fr; display: grid; place-items: center; min-height: 100vh; padding: 24px 16px; }
+
+/* ============================================================
+   Ajustes de celular (≤ 720px): ancho, controles táctiles y menús
+   ============================================================ */
+@media (max-width: 720px) {
+  /* Nada puede ensanchar la página más que la pantalla. `clip` no crea un
+     contenedor de desplazamiento, así que la barra superior sigue fija. */
+  .main { min-width: 0; overflow-x: clip; }
+  .content { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+  /* Barra superior compacta: solo iconos y códigos. */
+  .topbar { gap: 6px; padding: 0 12px; }
+  .topbar > div { gap: 6px !important; min-width: 0; }
+  /* El indicador de conexión solo aparece cuando no hay conexión. */
+  .status { font-size: 0; gap: 0; padding: 0; width: 34px; height: 34px; justify-content: center; }
+  .status:not(.status-off) { display: none; }
+  .topbar { padding-right: 58px; }
+  .currency-symbol, .currency-arrow, .lang-auto-tag, .lang-arrow { display: none; }
+  .currency-switch-btn, .lang-switch-btn { min-height: 34px; padding: 6px 9px; gap: 5px; }
+
+  /* Menús de divisa e idioma: anclados a la pantalla, no al botón. */
+  .currency-dropdown, .lang-dropdown {
+    position: fixed; top: calc(var(--topbar) + 6px); left: 12px; right: 12px;
+    min-width: 0; max-height: min(70vh, 460px); overflow-y: auto; z-index: 60;
+  }
+  .currency-option, .lang-option { min-height: 44px; }
+  .sync-btn { min-width: 40px; min-height: 40px; }
+  .leaflet-touch .leaflet-control-zoom a { width: 40px; height: 40px; line-height: 40px; }
+
+  /* Barra inferior: pestañas con ancho mínimo y desplazamiento horizontal. */
+  .tabbar {
+    display: flex; overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; scrollbar-width: none; gap: 2px; z-index: 40;
+  }
+  .tabbar::-webkit-scrollbar { display: none; }
+  .tab { flex: 1 0 52px; min-height: 48px; padding: 6px 1px; font-size: 10.5px; scroll-snap-align: start; white-space: nowrap; }
+
+  /* 16px en campos evita el zoom automático de iOS al escribir. */
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px !important; }
+
+  /* Áreas táctiles de al menos 40px. */
+  .btn-xs, .btn-sm { min-height: 40px; padding-top: 8px; padding-bottom: 8px; }
+  .icon-btn { min-width: 40px; min-height: 40px; }
+  .input-addon { min-height: 40px; }
+  .card-link, .link.small { min-height: 40px; display: inline-flex; align-items: center; }
+  .theme-pick-card { min-height: 44px; }
+  .chip { min-height: 38px; }
+  .auth-footer .link { display: inline-block; padding: 10px 4px; }
+
+  /* Hojas inferiores: ocupan el ancho y no se salen por los lados. */
+  .modal { max-height: 92dvh; max-width: 100vw; }
+  .modal-head { padding: 14px 16px 12px; }
+  .modal-head h2 { font-size: 17px; line-height: 1.25; min-width: 0; overflow-wrap: anywhere; }
+  .modal-body { padding: 16px; overflow-x: hidden; }
+
+  /* Asistente: el botón vive en la barra superior para no tapar el contenido
+     ni el mapa; el panel se abre debajo de ella. */
+  .help-assistant { top: calc((var(--topbar) - 38px) / 2); right: 12px; bottom: auto; z-index: 90; }
+  .assistant-toggle { min-height: 38px; height: 38px; width: 38px; padding: 0; justify-content: center; box-shadow: none; }
+  .assistant-toggle span { display: none; }
+  .assistant-panel {
+    position: fixed; top: calc(var(--topbar) + 8px); left: 12px; right: 12px; width: auto;
+    height: calc(100dvh - var(--topbar) - 84px - env(safe-area-inset-bottom));
+  }
+}
+
+/* Pantallas grandes o zoom alejado: más ancho útil, siempre centrado. */
+@media (min-width: 1600px) {
+  .content { max-width: 1320px; }
+}
+
+/* Auditoría con menú lateral fijo y poco ancho: filtros en tres columnas. */
+@media (min-width: 1024px) and (max-width: 1200px) {
+  .audit-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .audit-search { grid-column: span 2; }
+  .audit-submit { align-self: end; }
+}
+
+/* Leaflet usa z-index de hasta 1000 en sus capas: se aísla el mapa para que
+   ventanas, menús y el asistente siempre queden por encima. */
+.leaflet-container { position: relative; z-index: 0; isolation: isolate; }

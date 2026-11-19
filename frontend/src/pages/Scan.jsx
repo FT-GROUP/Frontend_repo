@@ -137,7 +137,7 @@ export default function Scan({ user }) {
           <button className="btn btn-primary" onClick={() => inputRef.current.click()}>Seleccionar archivo</button>
           <button className="btn btn-ghost" onClick={() => setCamara(true)}><Icon name="camera" size={16} />Tomar foto con la cámara</button>
           <small className="muted drop-hint">o arrastra y suelta aquí</small>
-          <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" hidden
+          <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden
             onChange={e => handle(e.target.files?.[0])} />
         </div>
       ) : (

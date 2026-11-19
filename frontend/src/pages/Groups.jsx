@@ -93,7 +93,7 @@ function NewGroupModal({ user, onClose, onCreated }) {
           <div className="members-edit">
             {integrantes.map((x, i) => (
               <div className="member-row member-row-single" key={i}>
-                <input aria-label={`${t('group_member_email')} ${i + 1}`} type="email" placeholder="correo@ejemplo.com" value={x} onChange={e => setInt(i, e.target.value)} />
+                <input aria-label={`${t('group_member_email')} ${i + 1}`} type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" placeholder="correo@ejemplo.com" value={x} onChange={e => setInt(i, e.target.value)} />
                 {integrantes.length > 1 && (
                   <button type="button" className="icon-btn" aria-label={t('group_remove_member')} onClick={() => setIntegrantes(l => l.filter((_, j) => j !== i))}><Icon name="close" size={16} /></button>
                 )}
@@ -135,7 +135,7 @@ function AddMemberModal({ user, grupo, onClose, onAdded }) {
         </Alert>
         <div className="field">
           <label htmlFor="m-email">{t('group_member_email')}</label>
-          <input id="m-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="correo@ejemplo.com" required autoFocus />
+          <input id="m-email" type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} inputMode="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="correo@ejemplo.com" required autoFocus />
           <small className="hint">{t('group_member_email_hint')}</small>
         </div>
       </form>
